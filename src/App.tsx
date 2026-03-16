@@ -5,6 +5,7 @@ import { AccountPage } from "./pages/AccountPage"
 import { ActivationPage } from "./pages/ActivationPage"
 import { BookDetailPage } from "./pages/BookDetailPage"
 import { CatalogPage } from "./pages/CatalogPage"
+import { CheckoutPage } from "./pages/CheckoutPage"
 import { HomePage } from "./pages/HomePage"
 import { LoginPage } from "./pages/LoginPage"
 import { RegisterPage } from "./pages/RegisterPage"
@@ -19,6 +20,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/catalogo" element={<CatalogPage />} />
           <Route path="/catalogo/:bookId" element={<BookDetailPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/registro" element={<RegisterPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/activate/:uid/:token" element={<ActivationPage />} />

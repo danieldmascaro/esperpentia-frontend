@@ -20,11 +20,13 @@ export type Comuna = {
   id: number
   nombre: string
   region_id: number
+  county_code?: string
 }
 
 export type ComunaResponse = {
   id: number
   nombre: string
+  county_code?: string
   region: Region
 }
 
@@ -134,4 +136,140 @@ export type CatalogBookFilters = {
   tipo_tapa?: string
   destacado?: boolean
   activo?: boolean
+}
+
+export type CartDiscountType = "percent" | "fixed" | "qty_promo" | "coupon"
+
+export type CartDiscount = {
+  id: string
+  code: string
+  type: CartDiscountType
+  value: string
+  amount: string
+  metadata: Record<string, unknown>
+  description: string
+}
+
+export type CartTaxLine = {
+  id: string
+  name: string
+  rate: string
+  taxable_base: string
+  amount: string
+}
+
+export type CartItem = {
+  id: string
+  book_id: number
+  quantity: number
+  unit_price_snapshot: string
+  subtotal: string
+  metadata_snapshot: Record<string, unknown>
+}
+
+export type Cart = {
+  id: string
+  user_id: number | string | null
+  guest_token: string | null
+  status: string
+  currency: string
+  subtotal_amount: string
+  discount_amount: string
+  tax_amount: string
+  total_amount: string
+  version: number
+  converted_at: string | null
+  created_at: string
+  updated_at: string
+  items: CartItem[]
+  discounts: CartDiscount[]
+  tax_lines: CartTaxLine[]
+}
+
+export type CartResolvePayload = {
+  guest_token?: string
+  currency?: string
+}
+
+export type CartAddItemPayload = {
+  book_id: number
+  quantity: number
+}
+
+export type CartUpdateItemPayload = {
+  quantity: number
+}
+
+export type CartApplyDiscountPayload = {
+  type: CartDiscountType
+  value?: string
+  code?: string
+  metadata?: Record<string, unknown>
+}
+
+export type Order = {
+  id: string
+  sale_id: string
+  status: string
+  currency: string
+  subtotal_amount: string
+  discount_amount: string
+  tax_amount: string
+  total_amount: string
+  created_at: string
+  updated_at: string
+}
+
+export type ShippingMethod = {
+  id: string | number
+  name: string
+  price: string
+  region: string
+  active: boolean
+}
+
+export type CustomerAddress = {
+  id: string | number
+  address: string
+  city: string
+  region: string
+  country: string
+  postal_code: string
+}
+
+export type CustomerAddressPayload = {
+  address: string
+  city: string
+  region: string
+  country: string
+  postal_code: string
+}
+
+export type PaymentIntent = {
+  payment_id: string
+  provider: string
+  provider_reference: string
+  client_secret?: string
+  token?: string
+  redirect_url?: string
+  webpay_url?: string
+  amount: string
+  currency: string
+  status: string
+  sandbox?: boolean
+}
+
+export type WebpayCommitResponse = {
+  payment: {
+    id: string
+    order: string
+    provider: string
+    provider_reference: string
+    amount: string
+    currency: string
+    status: string
+    created_at: string
+    updated_at: string
+  }
+  webpay: Record<string, unknown>
 }

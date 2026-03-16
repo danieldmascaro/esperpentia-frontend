@@ -1,29 +1,19 @@
+import { useState } from "react"
 import { BookOpenText, ShoppingCart } from "lucide-react"
 import { motion } from "framer-motion"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { toast } from "sonner"
 
+import { useCart } from "@/commerce/useCart"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { resolveMediaUrl } from "@/lib/api"
+import { formatCurrency } from "@/lib/cart"
 import { softRiseItem } from "@/lib/motion"
 import type { CatalogBook } from "@/pages/types"
 
 type BookCardProps = {
   book: CatalogBook
-}
-
-function formatCurrency(value: string, currency: string) {
-  const numericValue = Number(value)
-
-  if (Number.isNaN(numericValue)) {
-    return `${currency} ${value}`
-  }
-
-  return new Intl.NumberFormat("es-CL", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(numericValue)
 }
 
 function getBookImage(book: CatalogBook) {
@@ -32,6 +22,10 @@ function getBookImage(book: CatalogBook) {
 
 export function BookCard({ book }: BookCardProps) {
   const imageSrc = getBookImage(book)
+  const navigate = useNavigate()
+  const { addBookToCart, buyNow } = useCart()
+  const [isAdding, setIsAdding] = useState(false)
+  const [isBuyingNow, setIsBuyingNow] = useState(false)
 
   return (
     <article className="group flex h-auto min-h-[30rem] flex-col overflow-hidden border border-border/70 bg-card shadow-sm sm:h-[34rem] sm:min-h-0">
@@ -70,6 +64,20 @@ export function BookCard({ book }: BookCardProps) {
             variant="black"
             size="lg"
             className="h-9 shrink-0 self-center rounded-full px-4 text-sm font-semibold whitespace-nowrap"
+            disabled={isAdding || isBuyingNow}
+            onClick={() => {
+              setIsAdding(true)
+              void addBookToCart(book.id)
+                .then(() => {
+                  toast.success("Libro agregado al carrito")
+                })
+                .catch((error) => {
+                  toast.error(error instanceof Error ? error.message : "No se pudo agregar el libro al carrito")
+                })
+                .finally(() => {
+                  setIsAdding(false)
+                })
+            }}
           >
             <ShoppingCart className="h-4 w-4" />
             Anadir al carrito
@@ -89,12 +97,26 @@ export function BookCard({ book }: BookCardProps) {
         </div>
 
         <div className="flex justify-center">
-          <Link
-            to={`/catalogo/${book.id}`}
-            className="text-sm text-foreground underline underline-offset-4 hover:text-zinc-600"
+          <button
+            type="button"
+            className="text-xs text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isAdding || isBuyingNow}
+            onClick={() => {
+              setIsBuyingNow(true)
+              void buyNow(book.id)
+                .then(() => {
+                  navigate("/checkout")
+                })
+                .catch((error) => {
+                  toast.error(error instanceof Error ? error.message : "No se pudo preparar el carrito")
+                })
+                .finally(() => {
+                  setIsBuyingNow(false)
+                })
+            }}
           >
             COMPRAR AHORA
-          </Link>
+          </button>
         </div>
       </div>
     </article>

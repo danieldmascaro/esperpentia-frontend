@@ -1,7 +1,8 @@
-import { UserRound } from "lucide-react"
+import { ShoppingCart, UserRound } from "lucide-react"
 import { Link, NavLink, useNavigate } from "react-router-dom"
 
 import { useAuth } from "@/auth/useAuth"
+import { useCart } from "@/commerce/useCart"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -19,6 +20,7 @@ const links = [
 
 export function MainHeader() {
   const { isAuthenticated, user } = useAuth()
+  const { cartCount } = useCart()
   const { logout } = useLogout()
   const navigate = useNavigate()
   const userGreeting = user?.nombre ? `Hola, ${user.nombre}` : user?.email
@@ -44,6 +46,20 @@ export function MainHeader() {
               {link.label}
             </NavLink>
           ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link to="/checkout" />}
+            className="gap-2 border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"
+          >
+            <ShoppingCart className="size-4" />
+            Carrito
+            <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-black">
+              {cartCount}
+            </span>
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger
               render={

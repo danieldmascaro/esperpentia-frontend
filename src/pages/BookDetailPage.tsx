@@ -1,24 +1,14 @@
 import { useEffect, useState } from "react"
-import { ArrowLeft, BookOpenText } from "lucide-react"
-import { Link, useParams } from "react-router-dom"
+import { ArrowLeft, BookOpenText, ShoppingCart } from "lucide-react"
+import { Link, useNavigate, useParams } from "react-router-dom"
+import { toast } from "sonner"
 
+import { useCart } from "@/commerce/useCart"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getCatalogBookById, resolveMediaUrl } from "@/lib/api"
+import { formatCurrency } from "@/lib/cart"
 import type { CatalogBook } from "@/pages/types"
-
-function formatCurrency(value: string, currency: string) {
-  const numericValue = Number(value)
-
-  if (Number.isNaN(numericValue)) {
-    return `${currency} ${value}`
-  }
-
-  return new Intl.NumberFormat("es-CL", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(numericValue)
-}
 
 function DetailSkeleton() {
   return (
@@ -46,9 +36,13 @@ function DetailSkeleton() {
 
 export function BookDetailPage() {
   const { bookId } = useParams()
+  const navigate = useNavigate()
+  const { addBookToCart, buyNow } = useCart()
   const [book, setBook] = useState<CatalogBook | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isAdding, setIsAdding] = useState(false)
+  const [isBuyingNow, setIsBuyingNow] = useState(false)
 
   useEffect(() => {
     let ignore = false
@@ -108,8 +102,9 @@ export function BookDetailPage() {
     )
   }
 
-  const imageSrc = resolveMediaUrl(book.imagen)
-  const description = book.descripcion || book.obra.descripcion || "Sin descripcion disponible."
+  const currentBook = book
+  const imageSrc = resolveMediaUrl(currentBook.imagen)
+  const description = currentBook.descripcion || currentBook.obra.descripcion || "Sin descripcion disponible."
 
   return (
     <section className="space-y-8">
@@ -124,7 +119,7 @@ export function BookDetailPage() {
       <div className="grid gap-8 lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start">
         <div className="overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-sm">
           {imageSrc ? (
-            <img src={imageSrc} alt={book.nombre} className="aspect-[4/5] h-full w-full object-cover" />
+            <img src={imageSrc} alt={currentBook.nombre} className="aspect-[4/5] h-full w-full object-cover" />
           ) : (
             <div className="flex aspect-[4/5] items-center justify-center bg-muted text-muted-foreground">
               <BookOpenText className="h-14 w-14" aria-hidden="true" />
@@ -135,10 +130,10 @@ export function BookDetailPage() {
         <div className="space-y-6">
           <div className="space-y-3">
             <p className="text-sm font-semibold tracking-[0.24em] uppercase text-muted-foreground">
-              {book.editorial.nombre}
+              {currentBook.editorial.nombre}
             </p>
-            <h1 className="text-4xl font-semibold leading-tight">{book.nombre}</h1>
-            <p className="text-lg text-muted-foreground">{book.autor.nombre}</p>
+            <h1 className="text-4xl font-semibold leading-tight">{currentBook.nombre}</h1>
+            <p className="text-lg text-muted-foreground">{currentBook.autor.nombre}</p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -147,53 +142,99 @@ export function BookDetailPage() {
                 Precio
               </p>
               <p className="mt-2 text-2xl font-semibold">
-                {formatCurrency(book.precio, book.moneda)}
+                {formatCurrency(currentBook.precio, currentBook.moneda)}
               </p>
             </div>
             <div className="rounded-[1.5rem] bg-card px-4 py-4 shadow-sm ring-1 ring-border/70">
               <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-muted-foreground">
                 Tapa
               </p>
-              <p className="mt-2 text-lg font-semibold">{book.tipo_tapa || "N/D"}</p>
+              <p className="mt-2 text-lg font-semibold">{currentBook.tipo_tapa || "N/D"}</p>
             </div>
             <div className="rounded-[1.5rem] bg-card px-4 py-4 shadow-sm ring-1 ring-border/70">
               <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-muted-foreground">
                 Paginas
               </p>
-              <p className="mt-2 text-lg font-semibold">{book.cantidad_paginas ?? "N/D"}</p>
+              <p className="mt-2 text-lg font-semibold">{currentBook.cantidad_paginas ?? "N/D"}</p>
             </div>
             <div className="rounded-[1.5rem] bg-card px-4 py-4 shadow-sm ring-1 ring-border/70">
               <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-muted-foreground">
                 Ano
               </p>
-              <p className="mt-2 text-lg font-semibold">{book.anio_publicacion ?? "N/D"}</p>
+              <p className="mt-2 text-lg font-semibold">{currentBook.anio_publicacion ?? "N/D"}</p>
             </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="black"
+              size="lg"
+              className="rounded-full px-5"
+              disabled={isAdding || isBuyingNow}
+              onClick={() => {
+                setIsAdding(true)
+                void addBookToCart(currentBook.id)
+                  .then(() => {
+                    toast.success("Libro agregado al carrito")
+                  })
+                  .catch((error) => {
+                    toast.error(error instanceof Error ? error.message : "No se pudo agregar el libro al carrito")
+                  })
+                  .finally(() => {
+                    setIsAdding(false)
+                  })
+              }}
+            >
+              <ShoppingCart className="h-4 w-4" />
+              Anadir al carrito
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="rounded-full px-5"
+              disabled={isAdding || isBuyingNow}
+              onClick={() => {
+                setIsBuyingNow(true)
+                void buyNow(currentBook.id)
+                  .then(() => {
+                    navigate("/checkout")
+                  })
+                  .catch((error) => {
+                    toast.error(error instanceof Error ? error.message : "No se pudo preparar el carrito")
+                  })
+                  .finally(() => {
+                    setIsBuyingNow(false)
+                  })
+              }}
+            >
+              Comprar ahora
+            </Button>
           </div>
 
           <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
             <div className="rounded-[1.5rem] bg-muted/55 px-4 py-4">
               <p className="text-[11px] font-semibold tracking-[0.18em] uppercase">Genero</p>
-              <p className="mt-2 text-base font-semibold text-foreground">{book.genero.nombre}</p>
+              <p className="mt-2 text-base font-semibold text-foreground">{currentBook.genero.nombre}</p>
             </div>
             <div className="rounded-[1.5rem] bg-muted/55 px-4 py-4">
               <p className="text-[11px] font-semibold tracking-[0.18em] uppercase">ISBN</p>
-              <p className="mt-2 text-base font-semibold text-foreground">{book.isbn || "N/D"}</p>
+              <p className="mt-2 text-base font-semibold text-foreground">{currentBook.isbn || "N/D"}</p>
             </div>
             <div className="rounded-[1.5rem] bg-muted/55 px-4 py-4">
               <p className="text-[11px] font-semibold tracking-[0.18em] uppercase">Idioma</p>
-              <p className="mt-2 text-base font-semibold text-foreground">{book.idioma || "N/D"}</p>
+              <p className="mt-2 text-base font-semibold text-foreground">{currentBook.idioma || "N/D"}</p>
             </div>
             <div className="rounded-[1.5rem] bg-muted/55 px-4 py-4">
               <p className="text-[11px] font-semibold tracking-[0.18em] uppercase">Stock</p>
-              <p className="mt-2 text-base font-semibold text-foreground">{book.stock}</p>
+              <p className="mt-2 text-base font-semibold text-foreground">{currentBook.stock}</p>
             </div>
           </div>
 
           <div className="space-y-3">
             <h2 className="text-xl font-semibold">Sobre este libro</h2>
             <p className="text-sm leading-7 text-muted-foreground">{description}</p>
-            {book.obra.descripcion_corta ? (
-              <p className="text-sm leading-7 text-muted-foreground">{book.obra.descripcion_corta}</p>
+            {currentBook.obra.descripcion_corta ? (
+              <p className="text-sm leading-7 text-muted-foreground">{currentBook.obra.descripcion_corta}</p>
             ) : null}
           </div>
         </div>

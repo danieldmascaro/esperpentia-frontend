@@ -32,7 +32,7 @@ export async function loginRequest(credentials: AuthCredentials) {
     const { data } = await api.post<JwtTokenPair>(
       "/auth/jwt/create/",
       credentials,
-      { skipAuthRefresh: true }
+      { skipAuthRefresh: true, requiresCsrf: true }
     )
     return data
   } catch (error) {
@@ -44,6 +44,7 @@ export async function refreshAccessTokenRequest() {
   try {
     const { data } = await api.post<AccessTokenResponse>("/auth/jwt/refresh/", undefined, {
       skipAuthRefresh: true,
+      requiresCsrf: true,
     })
     return data
   } catch (error) {
@@ -53,7 +54,7 @@ export async function refreshAccessTokenRequest() {
 
 export async function logoutRequest() {
   try {
-    await api.post("/auth/jwt/logout/", undefined, { skipAuthRefresh: true })
+    await api.post("/auth/jwt/logout/", undefined, { skipAuthRefresh: true, requiresCsrf: true })
   } catch (error) {
     throw new Error(buildApiErrorMessage(error, "No se pudo cerrar sesion"))
   }

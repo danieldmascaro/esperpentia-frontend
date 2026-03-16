@@ -89,6 +89,7 @@ export async function getComunas(regionId: number) {
       id: comuna.id,
       nombre: comuna.nombre,
       region_id: comuna.region.id,
+      county_code: comuna.county_code,
     }))
   } catch (error) {
     throw new Error(buildApiErrorMessage(error, "No se pudieron cargar las comunas"))

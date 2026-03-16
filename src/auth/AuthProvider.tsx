@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useEffect,
+  useRef,
   useState,
   type PropsWithChildren,
 } from "react"
@@ -26,6 +27,7 @@ type AuthContextValue = {
   accessToken: string | null
   authLoading: boolean
   isAuthenticated: boolean
+  restoreSession: () => Promise<boolean>
   login: (credentials: AuthCredentials) => Promise<AuthUser>
   logout: () => Promise<void>
   updateProfile: (payload: AuthProfileUpdatePayload) => Promise<AuthUser>
@@ -36,7 +38,8 @@ export const AuthContext = createContext<AuthContextValue | null>(null)
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [accessToken, setAccessTokenState] = useState<string | null>(() => getAccessToken())
-  const [authLoading, setAuthLoading] = useState(true)
+  const [authLoading, setAuthLoading] = useState(false)
+  const restorePromiseRef = useRef<Promise<boolean> | null>(null)
 
   const applyAccessToken = useCallback((nextAccessToken: string | null) => {
     setApiAccessToken(nextAccessToken)
@@ -55,6 +58,34 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setUser(currentUser)
     return currentUser
   }, [applyAccessToken])
+
+  const restoreSession = useCallback(async () => {
+    if (restorePromiseRef.current) {
+      return restorePromiseRef.current
+    }
+
+    let currentRestorePromise: Promise<boolean> | null = null
+    currentRestorePromise = (async () => {
+      setAuthLoading(true)
+
+      try {
+        const { access } = await refreshAccessTokenRequest()
+        await hydrateAuthenticatedUser(access)
+        return true
+      } catch {
+        clearAuthState()
+        return false
+      } finally {
+        setAuthLoading(false)
+        if (restorePromiseRef.current === currentRestorePromise) {
+          restorePromiseRef.current = null
+        }
+      }
+    })()
+
+    restorePromiseRef.current = currentRestorePromise
+    return currentRestorePromise
+  }, [clearAuthState, hydrateAuthenticatedUser])
 
   const login = useCallback(async (credentials: AuthCredentials) => {
     const { access } = await loginRequest(credentials)
@@ -93,38 +124,20 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [clearAuthState])
 
   useEffect(() => {
-    let active = true
-
-    async function initializeAuth() {
+    if (accessToken && !user) {
       setAuthLoading(true)
-
-      try {
-        const { access } = await refreshAccessTokenRequest()
-
-        if (!active) {
-          return
-        }
-
-        await hydrateAuthenticatedUser(access)
-      } catch {
-        if (!active) {
-          return
-        }
-
-        clearAuthState()
-      } finally {
-        if (active) {
+      void getCurrentUserRequest()
+        .then((currentUser) => {
+          setUser(currentUser)
+        })
+        .catch(() => {
+          clearAuthState()
+        })
+        .finally(() => {
           setAuthLoading(false)
-        }
-      }
+        })
     }
-
-    void initializeAuth()
-
-    return () => {
-      active = false
-    }
-  }, [clearAuthState, hydrateAuthenticatedUser])
+  }, [accessToken, clearAuthState, user])
 
   return (
     <AuthContext.Provider
@@ -133,6 +146,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         accessToken,
         authLoading,
         isAuthenticated: Boolean(accessToken),
+        restoreSession,
         login,
         logout,
         updateProfile,
