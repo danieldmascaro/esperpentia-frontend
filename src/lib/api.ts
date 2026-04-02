@@ -1,5 +1,6 @@
 import axios from "axios"
 import { api } from "@/api/client"
+import { queryCache } from "@/lib/query-cache"
 import type {
   CatalogAuthor,
   CatalogBook,
@@ -97,58 +98,79 @@ export async function getComunas(regionId: number) {
 }
 
 export async function getCatalogBooks(filters: CatalogBookFilters) {
-  try {
-    const { data } = await api.get<PaginatedResponse<CatalogBook> | CatalogBook[]>(
-      "/catalog/books/",
-      {
-        params: buildQueryParams(filters),
-      }
-    )
+  // Generar clave de caché basada en filtros
+  const cacheKey = `books:${JSON.stringify(filters)}`
 
-    return normalizePaginatedData(data)
-  } catch (error) {
-    throw new Error(buildApiErrorMessage(error, "No se pudo cargar el catalogo"))
-  }
+  return queryCache.getOrFetch(cacheKey, async () => {
+    try {
+      const { data } = await api.get<PaginatedResponse<CatalogBook> | CatalogBook[]>(
+        "/catalog/books/",
+        {
+          params: buildQueryParams(filters),
+        }
+      )
+
+      return normalizePaginatedData(data)
+    } catch (error) {
+      throw new Error(buildApiErrorMessage(error, "No se pudo cargar el catalogo"))
+    }
+  })
 }
 
 export async function getCatalogBookById(bookId: number | string) {
-  try {
-    const { data } = await api.get<CatalogBook>(`/catalog/books/${bookId}/`)
-    return data
-  } catch (error) {
-    throw new Error(buildApiErrorMessage(error, "No se pudo cargar el libro"))
-  }
+  const cacheKey = `book:${bookId}`
+
+  return queryCache.getOrFetch(cacheKey, async () => {
+    try {
+      const { data } = await api.get<CatalogBook>(`/catalog/books/${bookId}/`)
+      return data
+    } catch (error) {
+      throw new Error(buildApiErrorMessage(error, "No se pudo cargar el libro"))
+    }
+  })
 }
 
 export async function getCatalogAuthors() {
-  try {
-    const { data } = await api.get<PaginatedResponse<CatalogAuthor> | CatalogAuthor[]>(
-      "/catalog/authors/"
-    )
-    return normalizePaginatedData(data)
-  } catch (error) {
-    throw new Error(buildApiErrorMessage(error, "No se pudieron cargar los autores"))
-  }
+  const cacheKey = "authors:all"
+
+  return queryCache.getOrFetch(cacheKey, async () => {
+    try {
+      const { data } = await api.get<PaginatedResponse<CatalogAuthor> | CatalogAuthor[]>(
+        "/catalog/authors/"
+      )
+      return normalizePaginatedData(data)
+    } catch (error) {
+      throw new Error(buildApiErrorMessage(error, "No se pudieron cargar los autores"))
+    }
+  })
 }
 
 export async function getCatalogGenres() {
-  try {
-    const { data } = await api.get<PaginatedResponse<CatalogGenre> | CatalogGenre[]>(
-      "/catalog/genres/"
-    )
-    return normalizePaginatedData(data)
-  } catch (error) {
-    throw new Error(buildApiErrorMessage(error, "No se pudieron cargar los generos"))
-  }
+  const cacheKey = "genres:all"
+
+  return queryCache.getOrFetch(cacheKey, async () => {
+    try {
+      const { data } = await api.get<PaginatedResponse<CatalogGenre> | CatalogGenre[]>(
+        "/catalog/genres/"
+      )
+      return normalizePaginatedData(data)
+    } catch (error) {
+      throw new Error(buildApiErrorMessage(error, "No se pudieron cargar los generos"))
+    }
+  })
 }
 
 export async function getCatalogPublishers() {
-  try {
-    const { data } = await api.get<PaginatedResponse<CatalogPublisher> | CatalogPublisher[]>(
-      "/catalog/publishers/"
-    )
-    return normalizePaginatedData(data)
-  } catch (error) {
-    throw new Error(buildApiErrorMessage(error, "No se pudieron cargar las editoriales"))
-  }
+  const cacheKey = "publishers:all"
+
+  return queryCache.getOrFetch(cacheKey, async () => {
+    try {
+      const { data } = await api.get<PaginatedResponse<CatalogPublisher> | CatalogPublisher[]>(
+        "/catalog/publishers/"
+      )
+      return normalizePaginatedData(data)
+    } catch (error) {
+      throw new Error(buildApiErrorMessage(error, "No se pudieron cargar las editoriales"))
+    }
+  })
 }

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useCallback, memo } from "react"
 import { BookOpenText, ShoppingCart } from "lucide-react"
 import { motion } from "framer-motion"
 import { Link, useNavigate } from "react-router-dom"
@@ -20,12 +20,41 @@ function getBookImage(book: CatalogBook) {
   return resolveMediaUrl(book.imagen)
 }
 
-export function BookCard({ book }: BookCardProps) {
+function BookCardComponent({ book }: BookCardProps) {
   const imageSrc = getBookImage(book)
   const navigate = useNavigate()
   const { addBookToCart, buyNow } = useCart()
   const [isAdding, setIsAdding] = useState(false)
   const [isBuyingNow, setIsBuyingNow] = useState(false)
+
+  // Memoizar callbacks para evitar re-renders
+  const handleAddToCart = useCallback(() => {
+    setIsAdding(true)
+    void addBookToCart(book.id)
+      .then(() => {
+        toast.success("Libro agregado al carrito")
+      })
+      .catch((error) => {
+        toast.error(error instanceof Error ? error.message : "No se pudo agregar el libro al carrito")
+      })
+      .finally(() => {
+        setIsAdding(false)
+      })
+  }, [book.id, addBookToCart])
+
+  const handleBuyNow = useCallback(() => {
+    setIsBuyingNow(true)
+    void buyNow(book.id)
+      .then(() => {
+        navigate("/checkout")
+      })
+      .catch((error) => {
+        toast.error(error instanceof Error ? error.message : "No se pudo preparar el carrito")
+      })
+      .finally(() => {
+        setIsBuyingNow(false)
+      })
+  }, [book.id, buyNow, navigate])
 
   return (
     <article className="group flex h-auto min-h-[30rem] flex-col overflow-hidden border border-border/70 bg-card shadow-sm sm:h-[34rem] sm:min-h-0">
@@ -65,19 +94,7 @@ export function BookCard({ book }: BookCardProps) {
             size="lg"
             className="h-9 shrink-0 self-center rounded-full px-4 text-sm font-semibold whitespace-nowrap"
             disabled={isAdding || isBuyingNow}
-            onClick={() => {
-              setIsAdding(true)
-              void addBookToCart(book.id)
-                .then(() => {
-                  toast.success("Libro agregado al carrito")
-                })
-                .catch((error) => {
-                  toast.error(error instanceof Error ? error.message : "No se pudo agregar el libro al carrito")
-                })
-                .finally(() => {
-                  setIsAdding(false)
-                })
-            }}
+            onClick={handleAddToCart}
           >
             <ShoppingCart className="h-4 w-4" />
             Anadir al carrito
@@ -101,19 +118,7 @@ export function BookCard({ book }: BookCardProps) {
             type="button"
             className="text-xs text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isAdding || isBuyingNow}
-            onClick={() => {
-              setIsBuyingNow(true)
-              void buyNow(book.id)
-                .then(() => {
-                  navigate("/checkout")
-                })
-                .catch((error) => {
-                  toast.error(error instanceof Error ? error.message : "No se pudo preparar el carrito")
-                })
-                .finally(() => {
-                  setIsBuyingNow(false)
-                })
-            }}
+            onClick={handleBuyNow}
           >
             COMPRAR AHORA
           </button>
@@ -122,6 +127,12 @@ export function BookCard({ book }: BookCardProps) {
     </article>
   )
 }
+
+// Memoizar component - solo re-renderiza si book.id cambia
+export const BookCard = memo(
+  BookCardComponent,
+  (prev, next) => prev.book.id === next.book.id
+)
 
 export function BookCardSkeleton() {
   return (
