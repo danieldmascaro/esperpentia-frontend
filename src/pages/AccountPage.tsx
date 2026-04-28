@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+﻿import { useCallback, useEffect, useRef, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -219,7 +219,7 @@ export function AccountPage() {
 
   if (authLoading) {
     return (
-      <BannerDiv title="CUENTA" subtitle="Resumen de tu sesion autenticada." className="max-w-5xl">
+      <BannerDiv title="CUENTA" subtitle="Resumen de tu sesión autenticada." className="max-w-5xl">
         <div className="flex min-h-64 items-center justify-center rounded-[1.75rem] border border-border bg-card/80">
           <Spinner className="size-6 text-muted-foreground" />
         </div>
@@ -242,7 +242,7 @@ export function AccountPage() {
           <p className="text-xs font-medium tracking-[0.2em] uppercase text-muted-foreground">
             Datos del perfil
           </p>
-          <h2 className="mt-2 text-2xl font-semibold text-foreground">Informacion de tu cuenta</h2>
+          <h2 className="mt-2 text-2xl font-semibold text-foreground">Información de tu cuenta</h2>
         </div>
 
         {isEditing ? (
@@ -269,11 +269,11 @@ export function AccountPage() {
                 />
               </div>
             </ProfileRow>
-            <ProfileRow label="Direccion" error={errors.direccion}>
+            <ProfileRow label="Dirección" error={errors.direccion}>
               <Input
                 id="direccion"
                 autoComplete="street-address"
-                placeholder="Direccion de entrega"
+                placeholder="Dirección de entrega"
                 aria-invalid={errors.direccion ? "true" : "false"}
                 {...register("direccion")}
               />
@@ -342,7 +342,8 @@ export function AccountPage() {
           <div className="mt-6">
             <ProfileRow label="Email" value={user?.email ?? "-"} />
             <ProfileRow label="Nombre" value={fullName} />
-            <ProfileRow label="Direccion" value={user?.direccion_entrega ?? "-"} />
+            <ProfileRow label="teléfono" value={user?.telefono ?? "-"} />
+            <ProfileRow label="Dirección" value={user?.direccion_entrega ?? "-"} />
             <ProfileRow label="Region" value={user?.region?.nombre ?? "-"} />
             <ProfileRow label="Comuna" value={user?.comuna?.nombre ?? "-"} />
 
@@ -359,3 +360,9 @@ export function AccountPage() {
     </BannerDiv>
   )
 }
+
+
+
+
+
+

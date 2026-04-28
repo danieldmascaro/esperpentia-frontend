@@ -1,4 +1,4 @@
-import { zodResolver } from "@hookform/resolvers/zod"
+﻿import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Navigate, useLocation, useNavigate } from "react-router-dom"
 import { z } from "zod"
@@ -12,7 +12,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { useLogin } from "@/hooks/useLogin"
 
 const loginSchema = z.object({
-  email: z.email("Ingresa un email valido."),
+  email: z.email("Ingresa un email válido."),
   password: z.string().min(1, "La password es obligatoria."),
 })
 
@@ -106,3 +106,4 @@ export function LoginPage() {
     </BannerDiv>
   )
 }
+

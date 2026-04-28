@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+﻿import { useEffect, useState } from "react"
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { toast } from "sonner"
@@ -67,7 +67,7 @@ export function CheckoutPage() {
         </EmptyHeader>
         <EmptyContent>
           <Button variant="black" size="lg" nativeButton={false} render={<Link to="/catalogo" />}>
-            Ir al catalogo
+            Ir al catálogo
           </Button>
         </EmptyContent>
       </Empty>
@@ -179,21 +179,24 @@ export function CheckoutPage() {
             <span className="text-muted-foreground">Subtotal</span>
             <span className="font-medium">{formatCurrency(cart.subtotal_amount, cart.currency)}</span>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">IVA</span>
-            <span className="font-medium">{formatCurrency(cart.tax_amount, cart.currency)}</span>
-          </div>
           <div className="flex items-center justify-between border-t border-border/70 pt-3 text-base">
             <span className="font-semibold">Total</span>
             <span className="font-semibold">{formatCurrency(cart.total_amount, cart.currency)}</span>
           </div>
         </CardContent>
         <CardFooter className="justify-center">
-          <p className="text-center text-sm text-muted-foreground">
-            En el siguiente paso se conectara despacho y cierre de compra.
-          </p>
+          <Button
+            variant="black"
+            size="lg"
+            nativeButton={false}
+            render={<Link to="/checkout/entrega" />}
+          >
+            Comprar
+          </Button>
         </CardFooter>
       </Card>
     </section>
   )
 }
+
+

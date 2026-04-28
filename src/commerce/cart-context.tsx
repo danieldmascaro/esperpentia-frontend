@@ -25,6 +25,7 @@ type CartContextValue = {
   cartCount: number
   isCartReady: boolean
   isCartMutating: boolean
+  cartMutationType: "add" | "update" | "remove" | "buy_now" | null
   refreshCart: () => Promise<Cart | null>
   addBookToCart: (bookId: number, quantity?: number) => Promise<Cart>
   updateCartItemQuantity: (itemId: string, quantity: number) => Promise<Cart>
@@ -43,6 +44,7 @@ export function CartProvider({ children }: PropsWithChildren) {
   const [cart, setCart] = useState<Cart | null>(null)
   const [isCartReady, setIsCartReady] = useState(false)
   const [isCartMutating, setIsCartMutating] = useState(false)
+  const [cartMutationType, setCartMutationType] = useState<CartContextValue["cartMutationType"]>(null)
   const mutationQueueRef = useRef<Promise<void>>(Promise.resolve())
 
   const getSessionGuestToken = useCallback(() => {
@@ -79,7 +81,10 @@ export function CartProvider({ children }: PropsWithChildren) {
     }
   }, [refreshCart])
 
-  const runCartMutation = useCallback(async <T,>(mutation: () => Promise<T>) => {
+  const runCartMutation = useCallback(async <T,>(
+    mutationType: NonNullable<CartContextValue["cartMutationType"]>,
+    mutation: () => Promise<T>,
+  ) => {
     const previous = mutationQueueRef.current
     let releaseQueue = () => {}
     mutationQueueRef.current = new Promise<void>((resolve) => {
@@ -88,12 +93,14 @@ export function CartProvider({ children }: PropsWithChildren) {
 
     await previous.catch(() => undefined)
     setIsCartMutating(true)
+    setCartMutationType(mutationType)
 
     try {
       return await mutation()
     } finally {
       releaseQueue()
       setIsCartMutating(false)
+      setCartMutationType(null)
     }
   }, [])
 
@@ -112,7 +119,7 @@ export function CartProvider({ children }: PropsWithChildren) {
   }, [cart, getSessionGuestToken])
 
   const addBookToCart = useCallback(async (bookId: number, quantity = 1) => {
-    return runCartMutation(async () => {
+    return runCartMutation("add", async () => {
       const activeCart = await ensureCart()
       const nextCart = await addCartItem(
         activeCart.id,
@@ -125,7 +132,7 @@ export function CartProvider({ children }: PropsWithChildren) {
   }, [ensureCart, getSessionGuestToken, runCartMutation])
 
   const updateCartItemQuantity = useCallback(async (itemId: string, quantity: number) => {
-    return runCartMutation(async () => {
+    return runCartMutation("update", async () => {
       const activeCart = await ensureCart()
       const nextCart = await updateCartItem(
         activeCart.id,
@@ -139,7 +146,7 @@ export function CartProvider({ children }: PropsWithChildren) {
   }, [ensureCart, getSessionGuestToken, runCartMutation])
 
   const removeCartLine = useCallback(async (itemId: string) => {
-    return runCartMutation(async () => {
+    return runCartMutation("remove", async () => {
       const activeCart = await ensureCart()
       const nextCart = await removeCartItem(activeCart.id, itemId, getSessionGuestToken())
       setCart(nextCart)
@@ -148,7 +155,7 @@ export function CartProvider({ children }: PropsWithChildren) {
   }, [ensureCart, getSessionGuestToken, runCartMutation])
 
   const buyNow = useCallback(async (bookId: number) => {
-    return runCartMutation(async () => {
+    return runCartMutation("buy_now", async () => {
       const activeCart = await ensureCart()
       let workingCart: Cart = activeCart
 
@@ -185,12 +192,13 @@ export function CartProvider({ children }: PropsWithChildren) {
     cartCount: getCartBookCount(cart),
     isCartReady,
     isCartMutating,
+    cartMutationType,
     refreshCart,
     addBookToCart,
     updateCartItemQuantity,
     removeCartLine,
     buyNow,
-  }), [addBookToCart, buyNow, cart, isCartMutating, isCartReady, refreshCart, removeCartLine, updateCartItemQuantity])
+  }), [addBookToCart, buyNow, cart, cartMutationType, isCartMutating, isCartReady, refreshCart, removeCartLine, updateCartItemQuantity])
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }

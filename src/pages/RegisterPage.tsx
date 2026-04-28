@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useState } from "react"
+﻿import { useDeferredValue, useEffect, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useForm } from "react-hook-form"
 import { z } from "zod"
@@ -14,9 +14,14 @@ import type { Comuna, Region } from "@/pages/types"
 
 const registerSchema = z
   .object({
-    email: z.email("Ingresa un email valido."),
+    email: z.email("Ingresa un email válido."),
     nombre: z.string().trim().min(1, "El nombre es obligatorio."),
     apellido: z.string().trim().min(1, "El apellido es obligatorio."),
+    telefono: z
+      .string()
+      .trim()
+      .min(8, "El telefono es obligatorio.")
+      .regex(/^[+\d()\-\s]+$/, "Ingresa un telefono válido."),
     direccion: z.string().trim(),
     regionId: z.string().min(1, "La region es obligatoria."),
     comunaId: z.string().min(1, "La comuna es obligatoria."),
@@ -24,7 +29,7 @@ const registerSchema = z
       .string()
       .min(8, "La password debe tener al menos 8 caracteres.")
       .regex(/[A-Za-z]/, "La password debe incluir al menos una letra.")
-      .regex(/\d/, "La password debe incluir al menos un numero.")
+      .regex(/\d/, "La password debe incluir al menos un número.")
       .regex(/^\S+$/, "La password no puede tener espacios."),
     rePassword: z.string(),
   })
@@ -177,6 +182,7 @@ export function RegisterPage() {
       email: "",
       nombre: "",
       apellido: "",
+      telefono: "",
       direccion: "",
       regionId: "",
       comunaId: "",
@@ -286,6 +292,7 @@ export function RegisterPage() {
         email: values.email,
         nombre: values.nombre,
         apellido: values.apellido,
+        telefono: values.telefono,
         direccion_entrega: values.direccion,
         region_id: Number(values.regionId),
         comuna_id: Number(values.comunaId),
@@ -348,15 +355,27 @@ export function RegisterPage() {
           </div>
 
           <Field>
-            <FieldLabel htmlFor="direccion">Direccion de entrega</FieldLabel>
+            <FieldLabel htmlFor="direccion">Dirección de entrega</FieldLabel>
             <Input
               id="direccion"
               autoComplete="street-address"
-              placeholder="Calle, numero, comuna"
+              placeholder="Calle, número, comuna"
               aria-invalid={errors.direccion ? "true" : "false"}
               {...register("direccion")}
             />
             <FieldError errors={[errors.direccion]} />
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="telefono">Teléfono</FieldLabel>
+            <Input
+              id="telefono"
+              autoComplete="tel"
+              placeholder="+56 9 1234 5678"
+              aria-invalid={errors.telefono ? "true" : "false"}
+              {...register("telefono")}
+            />
+            <FieldError errors={[errors.telefono]} />
           </Field>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -471,3 +490,8 @@ export function RegisterPage() {
     </BannerDiv>
   )
 }
+
+
+
+
+

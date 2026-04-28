@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+﻿import { useEffect, useRef } from "react"
 import type { PropsWithChildren } from "react"
 import { Navigate, useLocation } from "react-router-dom"
 
@@ -6,7 +6,7 @@ import { useAuth } from "@/auth/useAuth"
 import { Spinner } from "@/components/ui/spinner"
 
 export function ProtectedRoute({ children }: PropsWithChildren) {
-  const { authLoading, isAuthenticated, restoreSession } = useAuth()
+  const { authBootstrapped, authLoading, isAuthenticated, restoreSession } = useAuth()
   const location = useLocation()
   const restoreAttemptedRef = useRef(false)
 
@@ -26,14 +26,15 @@ export function ProtectedRoute({ children }: PropsWithChildren) {
     return <>{children}</>
   }
 
-  if (authLoading) {
+  if (!authBootstrapped || authLoading) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center gap-3 text-sm text-muted-foreground">
         <Spinner className="size-5" />
-        <span>Cargando sesion...</span>
+        <span>Cargando sesión...</span>
       </div>
     )
   }
 
   return <Navigate to="/login" replace state={{ from: location }} />
 }
+

@@ -1,4 +1,4 @@
-import {
+﻿import {
   createContext,
   useCallback,
   useEffect,
@@ -26,6 +26,7 @@ type AuthContextValue = {
   user: AuthUser | null
   accessToken: string | null
   authLoading: boolean
+  authBootstrapped: boolean
   isAuthenticated: boolean
   restoreSession: () => Promise<boolean>
   login: (credentials: AuthCredentials) => Promise<AuthUser>
@@ -38,8 +39,10 @@ export const AuthContext = createContext<AuthContextValue | null>(null)
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [accessToken, setAccessTokenState] = useState<string | null>(() => getAccessToken())
-  const [authLoading, setAuthLoading] = useState(false)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [authBootstrapped, setAuthBootstrapped] = useState(false)
   const restorePromiseRef = useRef<Promise<boolean> | null>(null)
+  const bootstrapRestoreRef = useRef(false)
 
   const applyAccessToken = useCallback((nextAccessToken: string | null) => {
     setApiAccessToken(nextAccessToken)
@@ -124,6 +127,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [clearAuthState])
 
   useEffect(() => {
+    if (bootstrapRestoreRef.current) {
+      return
+    }
+
+    bootstrapRestoreRef.current = true
+    void restoreSession().finally(() => {
+      setAuthBootstrapped(true)
+    })
+  }, [restoreSession])
+
+  useEffect(() => {
     if (accessToken && !user) {
       setAuthLoading(true)
       void getCurrentUserRequest()
@@ -139,12 +153,42 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }, [accessToken, clearAuthState, user])
 
+  useEffect(() => {
+    if (!accessToken) {
+      return
+    }
+
+    // Heartbeat silencioso para mantener la sesión activa tipo "siempre logueado".
+    const intervalMs = 4 * 60 * 1000
+
+    const tick = () => {
+      if (document.visibilityState !== "visible") {
+        return
+      }
+      void restoreSession()
+    }
+
+    const timer = window.setInterval(tick, intervalMs)
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        void restoreSession()
+      }
+    }
+
+    document.addEventListener("visibilitychange", onVisible)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener("visibilitychange", onVisible)
+    }
+  }, [accessToken, restoreSession])
+
   return (
     <AuthContext.Provider
       value={{
         user,
         accessToken,
         authLoading,
+        authBootstrapped,
         isAuthenticated: Boolean(accessToken),
         restoreSession,
         login,
@@ -156,3 +200,4 @@ export function AuthProvider({ children }: PropsWithChildren) {
     </AuthContext.Provider>
   )
 }
+

@@ -1,4 +1,4 @@
-import axios, {
+﻿import axios, {
   AxiosError,
   AxiosHeaders,
   type InternalAxiosRequestConfig,
@@ -35,6 +35,7 @@ let csrfPromise: Promise<string | null> | null = null
 let csrfToken: string | null = null
 let onAuthFailure: (() => void) | null = null
 let authSessionVersion = 0
+const REFRESH_RETRY_DELAYS_MS = [400, 1200, 2500]
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -110,6 +111,16 @@ function setAuthorizationHeader(config: RetryableRequestConfig, token: string) {
   config.headers = headers
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms)
+  })
+}
+
+function shouldRetryRefresh(status?: number) {
+  return status === undefined || status >= 500 || status === 429
+}
+
 async function refreshAccessToken() {
   if (refreshPromise) {
     return refreshPromise
@@ -129,10 +140,46 @@ async function refreshAccessToken() {
       setAccessToken(data.access)
       return data.access
     })
-    .catch(() => {
-      clearAccessToken()
-      onAuthFailure?.()
-      return null
+    .catch(async (initialError: unknown) => {
+      let latestError = initialError
+
+      for (const retryDelay of REFRESH_RETRY_DELAYS_MS) {
+        const axiosError = latestError as AxiosError | undefined
+        const status = axiosError?.response?.status
+
+        if (!shouldRetryRefresh(status)) {
+          break
+        }
+
+        await sleep(retryDelay)
+        try {
+          const { data } = await api.post<{ access: string }>("/auth/jwt/refresh/", undefined, {
+            skipAuthRefresh: true,
+            requiresCsrf: true,
+          } as RetryableRequestConfig)
+
+          if (sessionVersionAtStart !== authSessionVersion) {
+            return null
+          }
+
+          setAccessToken(data.access)
+          return data.access
+        } catch (retryError) {
+          latestError = retryError
+        }
+      }
+
+      const finalAxiosError = latestError as AxiosError | undefined
+      const finalStatus = finalAxiosError?.response?.status
+
+      // Solo invalidamos sesión cuando el refresh token realmente no es valido.
+      if (finalStatus === 401 || finalStatus === 403) {
+        clearAccessToken()
+        onAuthFailure?.()
+        return null
+      }
+
+      throw latestError
     })
     .finally(() => {
       if (refreshPromise === currentRefreshPromise) {
@@ -224,3 +271,4 @@ export function invalidateAuthSession() {
 export function registerAuthFailureHandler(handler: (() => void) | null) {
   onAuthFailure = handler
 }
+

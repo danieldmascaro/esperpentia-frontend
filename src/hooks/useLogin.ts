@@ -1,4 +1,4 @@
-import { useState } from "react"
+﻿import { useState } from "react"
 
 import { useAuth } from "@/auth/useAuth"
 import type { AuthCredentials } from "@/pages/types"
@@ -15,7 +15,7 @@ export function useLogin() {
     try {
       return await loginWithAuth(credentials)
     } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo iniciar sesion"
+      const message = err instanceof Error ? err.message : "No se pudo iniciar sesión"
       setError(message)
       throw err
     } finally {
@@ -29,3 +29,4 @@ export function useLogin() {
     error,
   }
 }
+

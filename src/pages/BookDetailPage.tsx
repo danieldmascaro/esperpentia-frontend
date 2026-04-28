@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+﻿import { useEffect, useState } from "react"
 import { ArrowLeft, BookOpenText, ShoppingCart } from "lucide-react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { toast } from "sonner"
@@ -13,7 +13,7 @@ import type { CatalogBook } from "@/pages/types"
 function DetailSkeleton() {
   return (
     <div className="grid gap-8 lg:grid-cols-[22rem_minmax(0,1fr)]">
-      <Skeleton className="aspect-[4/5] w-full rounded-[2rem]" />
+      <Skeleton className="mx-auto aspect-[4/5] w-44 rounded-[2rem] sm:mx-0 sm:w-full" />
       <div className="space-y-5">
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-10 w-4/5" />
@@ -93,7 +93,7 @@ export function BookDetailPage() {
           className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Volver al catalogo
+          Volver al catálogo
         </Link>
         <div className="rounded-[2rem] border border-destructive/20 bg-destructive/8 px-6 py-8 text-sm text-destructive">
           {error ?? "No se pudo encontrar el libro."}
@@ -105,19 +105,27 @@ export function BookDetailPage() {
   const currentBook = book
   const imageSrc = resolveMediaUrl(currentBook.imagen)
   const description = currentBook.descripcion || currentBook.obra.descripcion || "Sin descripcion disponible."
+  const shortDescription = currentBook.obra.descripcion_corta?.trim() ?? ""
+  const normalizedDescription = description.trim().toLowerCase()
+  const normalizedShortDescription = shortDescription.toLowerCase()
+  const shouldShowShortDescription = Boolean(
+    shortDescription &&
+    normalizedShortDescription !== normalizedDescription &&
+    !normalizedDescription.includes(normalizedShortDescription)
+  )
 
   return (
     <section className="space-y-8">
       <Link
         to="/catalogo"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        className="inline-flex items-center gap-2 text-base text-muted-foreground transition-colors hover:text-foreground sm:text-sm"
       >
         <ArrowLeft className="h-4 w-4" />
-        Volver al catalogo
+        Volver al catálogo
       </Link>
 
       <div className="grid gap-8 lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start">
-        <div className="overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-sm">
+        <div className="mx-auto w-44 overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-sm sm:mx-0 sm:w-full">
           {imageSrc ? (
             <img src={imageSrc} alt={currentBook.nombre} className="aspect-[4/5] h-full w-full object-cover" />
           ) : (
@@ -128,48 +136,48 @@ export function BookDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <div className="space-y-3">
+          <div className="space-y-3 text-center">
             <p className="text-sm font-semibold tracking-[0.24em] uppercase text-muted-foreground">
               {currentBook.editorial.nombre}
             </p>
-            <h1 className="text-4xl font-semibold leading-tight">{currentBook.nombre}</h1>
-            <p className="text-lg text-muted-foreground">{currentBook.autor.nombre}</p>
+            <h1 className="text-2xl font-semibold leading-tight sm:text-3xl">{currentBook.nombre}</h1>
+            <p className="text-lg text-muted-foreground sm:text-base">{currentBook.autor.nombre}</p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
             <div className="rounded-[1.5rem] bg-card px-4 py-4 shadow-sm ring-1 ring-border/70">
-              <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-muted-foreground">
+              <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">
                 Precio
               </p>
-              <p className="mt-2 text-2xl font-semibold">
+              <p className="mt-2 text-lg font-semibold sm:text-xl">
                 {formatCurrency(currentBook.precio, currentBook.moneda)}
               </p>
             </div>
             <div className="rounded-[1.5rem] bg-card px-4 py-4 shadow-sm ring-1 ring-border/70">
-              <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-muted-foreground">
+              <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">
                 Tapa
               </p>
-              <p className="mt-2 text-lg font-semibold">{currentBook.tipo_tapa || "N/D"}</p>
+              <p className="mt-2 text-base font-semibold">{currentBook.tipo_tapa || "N/D"}</p>
             </div>
             <div className="rounded-[1.5rem] bg-card px-4 py-4 shadow-sm ring-1 ring-border/70">
-              <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-muted-foreground">
+              <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">
                 Paginas
               </p>
-              <p className="mt-2 text-lg font-semibold">{currentBook.cantidad_paginas ?? "N/D"}</p>
+              <p className="mt-2 text-base font-semibold">{currentBook.cantidad_paginas ?? "N/D"}</p>
             </div>
             <div className="rounded-[1.5rem] bg-card px-4 py-4 shadow-sm ring-1 ring-border/70">
-              <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-muted-foreground">
+              <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-muted-foreground">
                 Ano
               </p>
-              <p className="mt-2 text-lg font-semibold">{currentBook.anio_publicacion ?? "N/D"}</p>
+              <p className="mt-2 text-base font-semibold">{currentBook.anio_publicacion ?? "N/D"}</p>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col items-center gap-2">
             <Button
               variant="black"
               size="lg"
-              className="rounded-full px-5"
+              className="rounded-full px-5 text-sm"
               disabled={isAdding || isBuyingNow}
               onClick={() => {
                 setIsAdding(true)
@@ -191,7 +199,7 @@ export function BookDetailPage() {
             <Button
               variant="outline"
               size="lg"
-              className="rounded-full px-5"
+              className="rounded-full px-5 text-sm"
               disabled={isAdding || isBuyingNow}
               onClick={() => {
                 setIsBuyingNow(true)
@@ -211,30 +219,30 @@ export function BookDetailPage() {
             </Button>
           </div>
 
-          <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
             <div className="rounded-[1.5rem] bg-muted/55 px-4 py-4">
-              <p className="text-[11px] font-semibold tracking-[0.18em] uppercase">Genero</p>
-              <p className="mt-2 text-base font-semibold text-foreground">{currentBook.genero.nombre}</p>
+              <p className="text-[10px] font-semibold tracking-[0.16em] uppercase">genero</p>
+              <p className="mt-2 text-sm font-semibold text-foreground">{currentBook.genero.nombre}</p>
             </div>
             <div className="rounded-[1.5rem] bg-muted/55 px-4 py-4">
-              <p className="text-[11px] font-semibold tracking-[0.18em] uppercase">ISBN</p>
-              <p className="mt-2 text-base font-semibold text-foreground">{currentBook.isbn || "N/D"}</p>
+              <p className="text-[10px] font-semibold tracking-[0.16em] uppercase">ISBN</p>
+              <p className="mt-2 text-sm font-semibold text-foreground">{currentBook.isbn || "N/D"}</p>
             </div>
             <div className="rounded-[1.5rem] bg-muted/55 px-4 py-4">
-              <p className="text-[11px] font-semibold tracking-[0.18em] uppercase">Idioma</p>
-              <p className="mt-2 text-base font-semibold text-foreground">{currentBook.idioma || "N/D"}</p>
+              <p className="text-[10px] font-semibold tracking-[0.16em] uppercase">Idioma</p>
+              <p className="mt-2 text-sm font-semibold text-foreground">{currentBook.idioma || "N/D"}</p>
             </div>
             <div className="rounded-[1.5rem] bg-muted/55 px-4 py-4">
-              <p className="text-[11px] font-semibold tracking-[0.18em] uppercase">Stock</p>
-              <p className="mt-2 text-base font-semibold text-foreground">{currentBook.stock}</p>
+              <p className="text-[10px] font-semibold tracking-[0.16em] uppercase">Stock</p>
+              <p className="mt-2 text-sm font-semibold text-foreground">{currentBook.stock}</p>
             </div>
           </div>
 
           <div className="space-y-3">
-            <h2 className="text-xl font-semibold">Sobre este libro</h2>
-            <p className="text-sm leading-7 text-muted-foreground">{description}</p>
-            {currentBook.obra.descripcion_corta ? (
-              <p className="text-sm leading-7 text-muted-foreground">{currentBook.obra.descripcion_corta}</p>
+            <h2 className="text-2xl font-semibold sm:text-xl">Sobre este libro</h2>
+            <p className="text-base leading-8 text-muted-foreground sm:text-sm sm:leading-7">{description}</p>
+            {shouldShowShortDescription ? (
+              <p className="text-base leading-8 text-muted-foreground sm:text-sm sm:leading-7">{shortDescription}</p>
             ) : null}
           </div>
         </div>
@@ -242,3 +250,7 @@ export function BookDetailPage() {
     </section>
   )
 }
+
+
+
+

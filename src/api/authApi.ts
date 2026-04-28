@@ -1,4 +1,4 @@
-import axios from "axios"
+﻿import axios from "axios"
 
 import { api } from "@/api/client"
 import type { AuthCredentials, AuthProfileUpdatePayload, AuthUser } from "@/pages/types"
@@ -36,7 +36,7 @@ export async function loginRequest(credentials: AuthCredentials) {
     )
     return data
   } catch (error) {
-    throw new Error(buildApiErrorMessage(error, "No se pudo iniciar sesion"))
+    throw new Error(buildApiErrorMessage(error, "No se pudo iniciar sesión"))
   }
 }
 
@@ -48,7 +48,7 @@ export async function refreshAccessTokenRequest() {
     })
     return data
   } catch (error) {
-    throw new Error(buildApiErrorMessage(error, "No se pudo restaurar la sesion"))
+    throw new Error(buildApiErrorMessage(error, "No se pudo restaurar la sesión"))
   }
 }
 
@@ -56,7 +56,7 @@ export async function logoutRequest() {
   try {
     await api.post("/auth/jwt/logout/", undefined, { skipAuthRefresh: true, requiresCsrf: true })
   } catch (error) {
-    throw new Error(buildApiErrorMessage(error, "No se pudo cerrar sesion"))
+    throw new Error(buildApiErrorMessage(error, "No se pudo cerrar sesión"))
   }
 }
 
@@ -77,3 +77,4 @@ export async function updateCurrentUserRequest(payload: AuthProfileUpdatePayload
     throw new Error(buildApiErrorMessage(error, "No se pudieron actualizar los datos"))
   }
 }
+

@@ -1,9 +1,10 @@
-// Tipos usados por la pagina de registro y su formulario dependiente de region/comuna.
+﻿// Tipos usados por la pagina de registro y su formulario dependiente de region/comuna.
 
 export type RegisterPayload = {
   email: string
   nombre: string
   apellido: string
+  telefono: string
   direccion_entrega: string
   region_id: number
   comuna_id: number
@@ -45,6 +46,7 @@ export type AuthCredentials = {
 export type AuthProfileUpdatePayload = {
   nombre?: string
   apellido?: string
+  telefono?: string
   direccion_entrega?: string
   region_id?: number
   comuna_id?: number
@@ -55,6 +57,10 @@ export type AuthUser = {
   email: string
   nombre?: string
   apellido?: string
+  telefono?: string
+  is_active?: boolean
+  is_staff?: boolean
+  is_superuser?: boolean
   direccion_entrega?: string
   region?: Region
   region_id?: number
@@ -66,6 +72,9 @@ export type CatalogAuthor = {
   id: number
   nombre: string
   slug: string
+  imagen?: string | null
+  fecha_nacimiento?: string | null
+  nacionalidad?: string
   biografia: string
 }
 
@@ -80,6 +89,7 @@ export type CatalogPublisher = {
   id: number
   nombre: string
   slug: string
+  imagen?: string | null
   descripcion: string
   sitio_web: string
 }
@@ -90,6 +100,7 @@ export type CatalogWork = {
   slug: string
   descripcion: string
   descripcion_corta: string
+  fecha_publicacion?: string | null
   autor: CatalogAuthor
   genero: CatalogGenre
   creado_en: string
@@ -138,6 +149,29 @@ export type CatalogBookFilters = {
   activo?: boolean
 }
 
+export type BlogPostImage = {
+  id: number
+  imagen: string
+  alt_text: string
+  orden: number
+  creado_en: string
+}
+
+export type BlogPost = {
+  id: number
+  titulo: string
+  slug: string
+  resumen: string
+  contenido: string
+  imagen_principal: string | null
+  status: "draft" | "published" | string
+  publicado_en: string | null
+  autor_nombre: string
+  imagenes: BlogPostImage[]
+  creado_en: string
+  actualizado_en: string
+}
+
 export type CartDiscountType = "percent" | "fixed" | "qty_promo" | "coupon"
 
 export type CartDiscount = {
@@ -184,6 +218,94 @@ export type Cart = {
   items: CartItem[]
   discounts: CartDiscount[]
   tax_lines: CartTaxLine[]
+}
+
+export type CartConversionResult = {
+  cart: Cart
+  order_id: string
+  sale_id: string
+  order_status: string
+}
+
+export type CartConvertPayload = {
+  contact_first_name?: string
+  contact_last_name?: string
+  contact_email?: string
+  contact_phone?: string
+  shipping_address?: string
+  shipping_city?: string
+  shipping_region?: string
+  shipping_postal_code?: string
+  shipping_country?: string
+}
+
+export type SaleItem = {
+  id: string
+  libro_id: number | null
+  libro_nombre: string
+  autor_nombre: string
+  editorial_nombre: string
+  genero_nombre: string
+  isbn: string
+  idioma: string
+  unit_price: string
+  quantity: number
+  subtotal: string
+  sold_at: string
+}
+
+export type Sale = {
+  id: string
+  cart_id: string
+  user_id: number | string | null
+  guest_token: string | null
+  status: string
+  despachado: boolean
+  contact_first_name: string
+  contact_last_name: string
+  contact_email: string
+  contact_phone: string
+  shipping_address: string
+  shipping_city: string
+  shipping_region: string
+  shipping_postal_code: string
+  shipping_country: string
+  currency: string
+  subtotal_amount: string
+  discount_amount: string
+  tax_amount: string
+  total_amount: string
+  items_count: number
+  total_quantity: number
+  sold_at: string
+  items: SaleItem[]
+}
+
+export type SalesSummary = {
+  orders_count: number
+  total_subtotal: string
+  total_discount: string
+  total_tax: string
+  total_amount: string
+  total_items: number
+  total_quantity: number
+  average_order_value: string
+}
+
+export type SalesByDatePoint = {
+  period: string
+  orders_count: number
+  total_amount: string
+  total_quantity: number
+}
+
+export type SalesByBookPoint = {
+  libro_id: number | null
+  libro_nombre: string
+  total_quantity: number
+  gross_sales: string
+  lines: number
+  authors_count: number
 }
 
 export type CartResolvePayload = {
@@ -273,3 +395,8 @@ export type WebpayCommitResponse = {
   }
   webpay: Record<string, unknown>
 }
+
+
+
+
+

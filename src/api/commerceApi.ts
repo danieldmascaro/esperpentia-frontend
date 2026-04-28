@@ -1,11 +1,17 @@
-import axios from "axios"
+﻿import axios from "axios"
 
 import { api } from "@/api/client"
 import type {
   Cart,
   CartAddItemPayload,
   CartApplyDiscountPayload,
+  CartConversionResult,
+  CartConvertPayload,
   CartResolvePayload,
+  Sale,
+  SalesByBookPoint,
+  SalesByDatePoint,
+  SalesSummary,
   CartUpdateItemPayload,
   CustomerAddress,
   CustomerAddressPayload,
@@ -188,11 +194,11 @@ export async function recalculateCart(cartId: string, guestToken?: string) {
   }
 }
 
-export async function convertCart(cartId: string, guestToken?: string) {
+export async function convertCart(cartId: string, guestToken?: string, payload?: CartConvertPayload) {
   try {
-    const { data } = await api.post<Cart>(
+    const { data } = await api.post<CartConversionResult>(
       `/checkout/carts/${cartId}/convert/`,
-      undefined,
+      payload ?? {},
       { headers: buildMutationHeaders(guestToken, "convert") }
     )
     return data
@@ -206,7 +212,7 @@ export async function getMyOrders() {
     const { data } = await api.get<PaginatedResponse<Order> | Order[]>("/orders/me/")
     return normalizePaginatedData(data)
   } catch (error) {
-    throw new Error(buildApiErrorMessage(error, "No se pudieron cargar las ordenes"))
+    throw new Error(buildApiErrorMessage(error, "No se pudieron cargar las órdenes"))
   }
 }
 
@@ -224,7 +230,7 @@ export async function getShippingMethods() {
     const { data } = await api.get<PaginatedResponse<ShippingMethod> | ShippingMethod[]>("/shipping/methods/")
     return normalizePaginatedData(data)
   } catch (error) {
-    throw new Error(buildApiErrorMessage(error, "No se pudieron cargar los metodos de envio"))
+    throw new Error(buildApiErrorMessage(error, "No se pudieron cargar los métodos de envío"))
   }
 }
 
@@ -233,7 +239,7 @@ export async function getCustomerAddresses() {
     const { data } = await api.get<PaginatedResponse<CustomerAddress> | CustomerAddress[]>("/shipping/address/")
     return normalizePaginatedData(data)
   } catch (error) {
-    throw new Error(buildApiErrorMessage(error, "No se pudieron cargar las direcciones"))
+    throw new Error(buildApiErrorMessage(error, "No se pudieron cargar las direcciónes"))
   }
 }
 
@@ -242,15 +248,22 @@ export async function createCustomerAddress(payload: CustomerAddressPayload) {
     const { data } = await api.post<CustomerAddress>("/shipping/address/", payload)
     return data
   } catch (error) {
-    throw new Error(buildApiErrorMessage(error, "No se pudo crear la direccion"))
+    throw new Error(buildApiErrorMessage(error, "No se pudo crear la dirección"))
   }
 }
 
-export async function createPaymentIntent(orderId: string, provider: "mockpay" | "webpay" = "mockpay") {
+export async function createPaymentIntent(
+  orderId: string,
+  provider: "mockpay" | "webpay" = "webpay",
+  guestToken?: string
+) {
   try {
     const { data } = await api.post<PaymentIntent>("/payments/create-intent/", {
       order_id: orderId,
       provider,
+      ...(guestToken ? { guest_token: guestToken } : {}),
+    }, {
+      headers: buildGuestHeaders(guestToken),
     })
     return data
   } catch (error) {
@@ -291,3 +304,96 @@ export async function refundWebpay(tokenWs: string, amount: string) {
     throw new Error(buildApiErrorMessage(error, "No se pudo solicitar el reembolso"))
   }
 }
+
+type SalesQueryParams = {
+  despachado?: boolean
+  ordering?: string
+}
+
+type SalesStatsQueryParams = {
+  date_from?: string
+  date_to?: string
+  status?: "completed" | "cancelled" | "refunded"
+  currency?: string
+}
+
+export async function getSales(params: SalesQueryParams = {}) {
+  try {
+    const searchParams = new URLSearchParams()
+    if (typeof params.despachado === "boolean") {
+      searchParams.set("despachado", params.despachado ? "true" : "false")
+    }
+    if (params.ordering) {
+      searchParams.set("ordering", params.ordering)
+    }
+
+    const queryString = searchParams.toString()
+    const endpoint = queryString ? `/ventas/?${queryString}` : "/ventas/"
+    const { data } = await api.get<PaginatedResponse<Sale> | Sale[]>(endpoint)
+    return normalizePaginatedData(data)
+  } catch (error) {
+    throw new Error(buildApiErrorMessage(error, "No se pudieron cargar las ventas para despacho"))
+  }
+}
+
+export async function updateSaleDispatchStatus(saleId: string, despachado: boolean) {
+  try {
+    const { data } = await api.patch<Sale>(
+      `/ventas/${saleId}/dispatch-status/`,
+      { despachado },
+      { headers: { "Idempotency-Key": createIdempotencyKey("dispatch-status") } }
+    )
+    return data
+  } catch (error) {
+    throw new Error(buildApiErrorMessage(error, "No se pudo actualizar el estado de despacho"))
+  }
+}
+
+function buildSalesStatsSearchParams(params: SalesStatsQueryParams = {}) {
+  const searchParams = new URLSearchParams()
+  if (params.date_from) searchParams.set("date_from", params.date_from)
+  if (params.date_to) searchParams.set("date_to", params.date_to)
+  if (params.status) searchParams.set("status", params.status)
+  if (params.currency) searchParams.set("currency", params.currency)
+  return searchParams
+}
+
+export async function getSalesSummary(params: SalesStatsQueryParams = {}) {
+  try {
+    const queryString = buildSalesStatsSearchParams(params).toString()
+    const endpoint = queryString ? `/ventas/stats/summary/?${queryString}` : "/ventas/stats/summary/"
+    const { data } = await api.get<SalesSummary>(endpoint)
+    return data
+  } catch (error) {
+    throw new Error(buildApiErrorMessage(error, "No se pudo cargar el resumen de ventas"))
+  }
+}
+
+export async function getSalesByDate(
+  params: SalesStatsQueryParams & { group_by?: "day" | "month" } = {}
+) {
+  try {
+    const searchParams = buildSalesStatsSearchParams(params)
+    searchParams.set("group_by", params.group_by ?? "day")
+    const { data } = await api.get<SalesByDatePoint[]>(`/ventas/stats/by-date/?${searchParams.toString()}`)
+    return data
+  } catch (error) {
+    throw new Error(buildApiErrorMessage(error, "No se pudo cargar la evoluciÃ³n temporal de ventas"))
+  }
+}
+
+export async function getSalesByBook(
+  params: SalesStatsQueryParams & { limit?: number } = {}
+) {
+  try {
+    const searchParams = buildSalesStatsSearchParams(params)
+    searchParams.set("limit", String(params.limit ?? 12))
+    const { data } = await api.get<SalesByBookPoint[]>(`/ventas/stats/by-book/?${searchParams.toString()}`)
+    return data
+  } catch (error) {
+    throw new Error(buildApiErrorMessage(error, "No se pudo cargar el anÃ¡lisis por libro"))
+  }
+}
+
+
+

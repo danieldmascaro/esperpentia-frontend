@@ -1,4 +1,4 @@
-import axios from "axios"
+﻿import axios from "axios"
 
 export type ChilexpressStreet = {
   streetId: number
@@ -41,10 +41,14 @@ type RatePayload = {
   deliveryTime: number
 }
 
-const COVERAGE_API_KEY = import.meta.env.VITE_CHILEXPRESS_API_COBERTURA_KEY
+const COVERAGE_API_KEY =
+  import.meta.env.VITE_CHILEXPRESS_API_COBERTURA_KEY ?? import.meta.env.CHILEXPRESS_API_COBERTURA_KEY
 const RATES_API_KEY =
-  import.meta.env.VITE_CHILEXPRESS_API_COTIZADOR_KEY ?? import.meta.env.VITE_CHILEXPRESS_API_COBERTURA_KEY
-const CHILEXPRESS_ORIGIN_COUNTY_CODE = import.meta.env.VITE_CHILEXPRESS_ORIGIN_COUNTY_CODE ?? "STGO"
+  import.meta.env.VITE_CHILEXPRESS_API_COTIZADOR_KEY ??
+  import.meta.env.CHILEXPRESS_API_COTIZADOR_KEY ??
+  import.meta.env.VITE_CHILEXPRESS_API_COBERTURA_KEY ??
+  import.meta.env.CHILEXPRESS_API_COBERTURA_KEY
+const CHILEXPRESS_ORIGIN_COUNTY_CODE = "STGO"
 const CHILEXPRESS_API_BASE_URL = import.meta.env.VITE_CHILEXPRESS_API_BASE_URL ?? "http://testservices.wschilexpress.com"
 
 const chilexpressApi = axios.create({
@@ -85,6 +89,12 @@ function getRequiredKey(key: string | undefined, keyName: string) {
   return key
 }
 
+function assertCountyCode(value: string, field: "originCountyCode" | "destinationCountyCode") {
+  if (!/^[A-Z0-9]{4}$/.test(value)) {
+    throw new Error(`${field} inválido (${value}). Debe ser un código de cobertura de 4 caracteres.`)
+  }
+}
+
 export function getChilexpressOriginCountyCode() {
   return CHILEXPRESS_ORIGIN_COUNTY_CODE
 }
@@ -117,13 +127,18 @@ export async function searchChilexpressStreets(payload: StreetSearchPayload, lim
 
 export async function quoteChilexpressRate(payload: Omit<RatePayload, "originCountyCode">) {
   const apiKey = getRequiredKey(RATES_API_KEY, "VITE_CHILEXPRESS_API_COTIZADOR_KEY")
+  const originCountyCode = CHILEXPRESS_ORIGIN_COUNTY_CODE
+  const destinationCountyCode = payload.destinationCountyCode.trim().toUpperCase()
+  assertCountyCode(originCountyCode, "originCountyCode")
+  assertCountyCode(destinationCountyCode, "destinationCountyCode")
 
   try {
     const { data } = await chilexpressApi.post<{ data?: { courierServiceOptions?: ChilexpressRateOption[] } }>(
       "/rating/api/v1.0/rates/courier",
       {
-        originCountyCode: CHILEXPRESS_ORIGIN_COUNTY_CODE,
         ...payload,
+        originCountyCode,
+        destinationCountyCode,
       },
       {
         headers: {
@@ -134,6 +149,7 @@ export async function quoteChilexpressRate(payload: Omit<RatePayload, "originCou
 
     return data.data?.courierServiceOptions ?? []
   } catch (error) {
-    throw new Error(buildApiErrorMessage(error, "No se pudo cotizar el envio con Chilexpress"))
+    throw new Error(buildApiErrorMessage(error, "No se pudo cotizar el envío con Chilexpress"))
   }
 }
+
