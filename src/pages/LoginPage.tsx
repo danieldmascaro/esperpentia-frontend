@@ -1,6 +1,6 @@
 ﻿import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { Navigate, useLocation, useNavigate } from "react-router-dom"
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom"
 import { z } from "zod"
 
 import { useAuth } from "@/auth/useAuth"
@@ -23,6 +23,14 @@ export function LoginPage() {
   const location = useLocation()
   const { isAuthenticated } = useAuth()
   const { login, isLoading, error } = useLogin()
+  const passwordResetSuccess =
+    typeof location.state === "object" &&
+    location.state &&
+    "passwordResetSuccess" in location.state &&
+    typeof location.state.passwordResetSuccess === "string"
+      ? location.state.passwordResetSuccess
+      : null
+
   const {
     register,
     handleSubmit,
@@ -56,11 +64,7 @@ export function LoginPage() {
   }
 
   return (
-    <BannerDiv
-      title="LOGIN"
-      subtitle="Ingresa con tu email y password."
-      className="max-w-md"
-    >
+    <BannerDiv title="LOGIN" subtitle="Ingresa con tu email y password." className="max-w-md">
       <form className="space-y-5" onSubmit={submitHandler}>
         <FieldGroup>
           <Field>
@@ -91,6 +95,14 @@ export function LoginPage() {
         </FieldGroup>
 
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {error ? (
+          <p className="text-sm">
+            <Link to="/password/reset" className="text-muted-foreground underline underline-offset-2 hover:text-foreground">
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </p>
+        ) : null}
+        {passwordResetSuccess ? <p className="text-sm text-emerald-600">{passwordResetSuccess}</p> : null}
 
         <Button type="submit" variant="black" className="w-full" disabled={isLoading}>
           {isLoading ? (
@@ -102,8 +114,14 @@ export function LoginPage() {
             "Entrar"
           )}
         </Button>
+
+        <p className="text-center text-sm text-muted-foreground">
+          ¿No tienes cuenta?{" "}
+          <Link to="/registro" className="underline underline-offset-2 hover:text-foreground">
+            Crea una aquí
+          </Link>
+        </p>
       </form>
     </BannerDiv>
   )
 }
-

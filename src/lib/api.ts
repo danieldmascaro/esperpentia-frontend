@@ -1,5 +1,5 @@
-﻿import axios from "axios"
-import { api } from "@/api/client"
+﻿import { api } from "@/api/client"
+import { buildHumanApiErrorMessage } from "@/lib/human-errors"
 import { queryCache } from "@/lib/query-cache"
 import type {
   CatalogAuthor,
@@ -19,19 +19,7 @@ import type {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ""
 
 function buildApiErrorMessage(error: unknown, fallback: string) {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data
-
-    if (typeof data === "string" && data.trim().length > 0) {
-      return data
-    }
-
-    if (data) {
-      return JSON.stringify(data)
-    }
-  }
-
-  return fallback
+  return buildHumanApiErrorMessage(error, fallback)
 }
 
 function isPaginatedResponse<T>(data: PaginatedResponse<T> | T[]): data is PaginatedResponse<T> {
@@ -483,6 +471,11 @@ export async function getBlogPostById(postId: number | string) {
     }
   })
 }
+
+
+
+
+
 
 
 

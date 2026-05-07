@@ -64,8 +64,14 @@ function BookCardComponent({ book, variant = "default" }: BookCardProps) {
   return (
     <article className="group relative flex h-auto flex-col overflow-hidden border border-border/50 bg-card transition-all duration-300 hover:border-border/80 hover:shadow-md">
       {/* Banner negro con tÃ­tulo (portada) */}
-      <div className={variant === "featured" ? "bg-black px-3 py-2 text-white" : "bg-black px-5 py-4 text-white"}>
-        <h2 className={variant === "featured" ? "line-clamp-2 text-sm font-medium leading-snug" : "line-clamp-3 text-base font-medium leading-snug sm:text-lg"}>
+      <div
+        className={
+          variant === "featured"
+            ? "flex h-12 items-start bg-black px-3 py-2 text-white"
+            : "flex h-24 items-start bg-black px-5 py-4 text-white"
+        }
+      >
+        <h2 className={variant === "featured" ? "line-clamp-2 text-lg font-medium leading-snug sm:text-xl" : "line-clamp-3 text-lg font-medium leading-snug sm:text-xl"}>
           {book.nombre}
         </h2>
       </div>
@@ -185,7 +191,7 @@ export function BookCardSkeleton() {
       animate="show"
     >
       {/* Skeleton banner */}
-      <div className="bg-black px-5 py-4">
+      <div className="flex h-24 flex-col items-start bg-black px-5 py-4">
         <Skeleton className="h-5 w-full bg-white/15" />
         <Skeleton className="mt-2 h-4 w-3/4 bg-white/15" />
       </div>

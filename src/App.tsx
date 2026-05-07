@@ -6,7 +6,7 @@ import { HomePage } from "./pages/HomePage"
 import { AdminRoute } from "./routes/AdminRoute"
 import { ProtectedRoute } from "./routes/ProtectedRoute"
 
-// Lazy load pÃ¡ginas no crÃ­ticas - reducir bundle inicial 68%
+// Lazy load páginas no críticas - reducir bundle inicial 68%
 const CatalogPage = lazy(() =>
   import("./pages/CatalogPage").then((m) => ({ default: m.CatalogPage }))
 )
@@ -34,6 +34,12 @@ const RegisterPage = lazy(() =>
 )
 const ActivationPage = lazy(() =>
   import("./pages/ActivationPage").then((m) => ({ default: m.ActivationPage }))
+)
+const ForgotPasswordPage = lazy(() =>
+  import("./pages/ForgotPasswordPage").then((m) => ({ default: m.ForgotPasswordPage }))
+)
+const ResetPasswordConfirmPage = lazy(() =>
+  import("./pages/ResetPasswordConfirmPage").then((m) => ({ default: m.ResetPasswordConfirmPage }))
 )
 const AdminCatalogPage = lazy(() =>
   import("./pages/AdminCatalogPage").then((m) => ({ default: m.AdminCatalogPage }))
@@ -74,6 +80,8 @@ function App() {
             <Route path="/checkout/resultado" element={<WebpayResultPage />} />
             <Route path="/registro" element={<RegisterPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/password/reset" element={<ForgotPasswordPage />} />
+            <Route path="/password/reset/confirm/:uid/:token" element={<ResetPasswordConfirmPage />} />
             <Route path="/activate/:uid/:token" element={<ActivationPage />} />
             <Route
               path="/cuenta"
@@ -122,5 +130,3 @@ function App() {
 }
 
 export default App
-
-

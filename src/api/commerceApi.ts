@@ -1,6 +1,7 @@
 ﻿import axios from "axios"
 
 import { api } from "@/api/client"
+import { buildHumanApiErrorMessage } from "@/lib/human-errors"
 import type {
   Cart,
   CartAddItemPayload,
@@ -29,46 +30,7 @@ function createIdempotencyKey(prefix: string) {
 }
 
 function buildApiErrorMessage(error: unknown, fallback: string) {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data
-    const networkMessage = error.message?.trim()
-
-    if (typeof data === "string" && data.trim().length > 0) {
-      return data
-    }
-
-    if (data && typeof data === "object") {
-      if ("detail" in data && typeof data.detail === "string" && data.detail.trim().length > 0) {
-        return data.detail
-      }
-
-      const firstValue = Object.values(data).find((value) => {
-        if (typeof value === "string") {
-          return value.trim().length > 0
-        }
-        return Array.isArray(value) && value.length > 0
-      })
-
-      if (typeof firstValue === "string") {
-        return firstValue
-      }
-
-      if (Array.isArray(firstValue)) {
-        const firstItem = firstValue.find((value) => typeof value === "string" && value.trim().length > 0)
-        if (typeof firstItem === "string") {
-          return firstItem
-        }
-      }
-
-      return JSON.stringify(data)
-    }
-
-    if (networkMessage) {
-      return networkMessage
-    }
-  }
-
-  return fallback
+  return buildHumanApiErrorMessage(error, fallback)
 }
 
 function normalizePaginatedData<T>(data: PaginatedResponse<T> | T[]) {
@@ -394,6 +356,7 @@ export async function getSalesByBook(
     throw new Error(buildApiErrorMessage(error, "No se pudo cargar el anÃ¡lisis por libro"))
   }
 }
+
 
 
 

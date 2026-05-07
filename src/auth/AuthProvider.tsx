@@ -14,6 +14,7 @@ import {
   setAccessToken as setApiAccessToken,
 } from "@/api/client"
 import {
+  AuthApiError,
   getCurrentUserRequest,
   loginRequest,
   logoutRequest,
@@ -22,13 +23,18 @@ import {
 } from "@/api/authApi"
 import type { AuthCredentials, AuthProfileUpdatePayload, AuthUser } from "@/pages/types"
 
+type RestoreSessionOptions = {
+  silent?: boolean
+  hydrateUser?: boolean
+}
+
 type AuthContextValue = {
   user: AuthUser | null
   accessToken: string | null
   authLoading: boolean
   authBootstrapped: boolean
   isAuthenticated: boolean
-  restoreSession: () => Promise<boolean>
+  restoreSession: (options?: RestoreSessionOptions) => Promise<boolean>
   login: (credentials: AuthCredentials) => Promise<AuthUser>
   logout: () => Promise<void>
   updateProfile: (payload: AuthProfileUpdatePayload) => Promise<AuthUser>
@@ -44,6 +50,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const restorePromiseRef = useRef<Promise<boolean> | null>(null)
   const bootstrapRestoreRef = useRef(false)
 
+  const isHardAuthFailure = useCallback((error: unknown) => {
+    if (!(error instanceof AuthApiError)) {
+      return false
+    }
+    return error.status === 401 || error.status === 403
+  }, [])
+
   const applyAccessToken = useCallback((nextAccessToken: string | null) => {
     setApiAccessToken(nextAccessToken)
     setAccessTokenState(nextAccessToken)
@@ -55,31 +68,50 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setUser(null)
   }, [applyAccessToken])
 
-  const hydrateAuthenticatedUser = useCallback(async (nextAccessToken: string) => {
-    applyAccessToken(nextAccessToken)
+  const refreshAccessTokenOnly = useCallback(async () => {
+    const { access } = await refreshAccessTokenRequest()
+    applyAccessToken(access)
+    return access
+  }, [applyAccessToken])
+
+  const hydrateAuthenticatedUser = useCallback(async () => {
     const currentUser = await getCurrentUserRequest()
     setUser(currentUser)
     return currentUser
-  }, [applyAccessToken])
+  }, [])
 
-  const restoreSession = useCallback(async () => {
+  const restoreSession = useCallback(async (options: RestoreSessionOptions = {}) => {
+    const { silent = false, hydrateUser = true } = options
+
     if (restorePromiseRef.current) {
       return restorePromiseRef.current
     }
 
     let currentRestorePromise: Promise<boolean> | null = null
     currentRestorePromise = (async () => {
-      setAuthLoading(true)
+      if (!silent) {
+        setAuthLoading(true)
+      }
 
       try {
-        const { access } = await refreshAccessTokenRequest()
-        await hydrateAuthenticatedUser(access)
+        await refreshAccessTokenOnly()
+        if (hydrateUser) {
+          await hydrateAuthenticatedUser()
+        }
         return true
-      } catch {
-        clearAuthState()
-        return false
+      } catch (error) {
+        if (isHardAuthFailure(error)) {
+          clearAuthState()
+          return false
+        }
+
+        // En errores transitorios (red/5xx/timeout), mantenemos la sesión previa
+        // para evitar parpadeos y validaciones de permisos visibles.
+        return Boolean(accessToken)
       } finally {
-        setAuthLoading(false)
+        if (!silent) {
+          setAuthLoading(false)
+        }
         if (restorePromiseRef.current === currentRestorePromise) {
           restorePromiseRef.current = null
         }
@@ -88,18 +120,19 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     restorePromiseRef.current = currentRestorePromise
     return currentRestorePromise
-  }, [clearAuthState, hydrateAuthenticatedUser])
+  }, [accessToken, clearAuthState, hydrateAuthenticatedUser, isHardAuthFailure, refreshAccessTokenOnly])
 
   const login = useCallback(async (credentials: AuthCredentials) => {
     const { access } = await loginRequest(credentials)
 
     try {
-      return await hydrateAuthenticatedUser(access)
+      applyAccessToken(access)
+      return await hydrateAuthenticatedUser()
     } catch (error) {
       clearAuthState()
       throw error
     }
-  }, [clearAuthState, hydrateAuthenticatedUser])
+  }, [applyAccessToken, clearAuthState, hydrateAuthenticatedUser])
 
   const logout = useCallback(async () => {
     try {
@@ -132,46 +165,30 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
 
     bootstrapRestoreRef.current = true
-    void restoreSession().finally(() => {
+    void restoreSession({ silent: false, hydrateUser: true }).finally(() => {
       setAuthBootstrapped(true)
     })
   }, [restoreSession])
-
-  useEffect(() => {
-    if (accessToken && !user) {
-      setAuthLoading(true)
-      void getCurrentUserRequest()
-        .then((currentUser) => {
-          setUser(currentUser)
-        })
-        .catch(() => {
-          clearAuthState()
-        })
-        .finally(() => {
-          setAuthLoading(false)
-        })
-    }
-  }, [accessToken, clearAuthState, user])
 
   useEffect(() => {
     if (!accessToken) {
       return
     }
 
-    // Heartbeat silencioso para mantener la sesión activa tipo "siempre logueado".
+    // Refresh silencioso para evitar cortes de sesión o parpadeos de permisos.
     const intervalMs = 4 * 60 * 1000
 
     const tick = () => {
       if (document.visibilityState !== "visible") {
         return
       }
-      void restoreSession()
+      void restoreSession({ silent: true, hydrateUser: false })
     }
 
     const timer = window.setInterval(tick, intervalMs)
     const onVisible = () => {
       if (document.visibilityState === "visible") {
-        void restoreSession()
+        void restoreSession({ silent: true, hydrateUser: false })
       }
     }
 
@@ -200,4 +217,3 @@ export function AuthProvider({ children }: PropsWithChildren) {
     </AuthContext.Provider>
   )
 }
-

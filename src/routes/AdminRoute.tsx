@@ -5,9 +5,9 @@ import { useAuth } from "@/auth/useAuth"
 import { Spinner } from "@/components/ui/spinner"
 
 export function AdminRoute({ children }: PropsWithChildren) {
-  const { authLoading, user } = useAuth()
+  const { authBootstrapped, authLoading, user } = useAuth()
 
-  if (authLoading || !user) {
+  if (!authBootstrapped || (authLoading && !user)) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center gap-3 text-sm text-muted-foreground">
         <Spinner className="size-5" />
@@ -16,10 +16,13 @@ export function AdminRoute({ children }: PropsWithChildren) {
     )
   }
 
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
   if (!user.is_staff && !user.is_superuser) {
     return <Navigate to="/" replace />
   }
 
   return <>{children}</>
 }
-

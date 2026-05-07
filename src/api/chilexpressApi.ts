@@ -1,4 +1,5 @@
 ﻿import axios from "axios"
+import { buildHumanApiErrorMessage } from "@/lib/human-errors"
 
 export type ChilexpressStreet = {
   streetId: number
@@ -59,26 +60,7 @@ const chilexpressApi = axios.create({
 })
 
 function buildApiErrorMessage(error: unknown, fallback: string) {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data
-
-    if (typeof data === "string" && data.trim().length > 0) {
-      return data
-    }
-
-    if (data && typeof data === "object") {
-      const description =
-        "statusDescription" in data && typeof data.statusDescription === "string"
-          ? data.statusDescription
-          : null
-
-      if (description) {
-        return description
-      }
-    }
-  }
-
-  return fallback
+  return buildHumanApiErrorMessage(error, fallback)
 }
 
 function getRequiredKey(key: string | undefined, keyName: string) {
@@ -152,4 +134,5 @@ export async function quoteChilexpressRate(payload: Omit<RatePayload, "originCou
     throw new Error(buildApiErrorMessage(error, "No se pudo cotizar el envío con Chilexpress"))
   }
 }
+
 

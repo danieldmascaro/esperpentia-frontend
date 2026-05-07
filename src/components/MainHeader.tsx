@@ -1,6 +1,6 @@
 ﻿import { AnimatePresence, motion } from "framer-motion"
-import { Menu, ShoppingCart, UserRound } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
+import { ChevronDown, Menu, ShoppingCart, UserRound } from "lucide-react"
+import { Fragment, useEffect, useRef, useState } from "react"
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom"
 
 import { useAuth } from "@/auth/useAuth"
@@ -15,6 +15,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useLogout } from "@/hooks/useLogout"
+import { getPublishedBlogPosts } from "@/lib/api"
+import type { BlogPost } from "@/pages/types"
 
 const links = [
   { to: "/", label: "Inicio" },
@@ -28,7 +30,10 @@ export function MainHeader() {
   const location = useLocation()
   const navigate = useNavigate()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isMobileNewsOpen, setIsMobileNewsOpen] = useState(false)
   const [pendingDispatchCount, setPendingDispatchCount] = useState(0)
+  const [newsPosts, setNewsPosts] = useState<BlogPost[]>([])
+  const [isNewsLoading, setIsNewsLoading] = useState(false)
   const mobileMenuButtonRef = useRef<HTMLButtonElement | null>(null)
   const mobileMenuPanelRef = useRef<HTMLDivElement | null>(null)
   const isAdmin = Boolean(user?.is_staff || user?.is_superuser)
@@ -38,6 +43,7 @@ export function MainHeader() {
 
   useEffect(() => {
     setIsMobileMenuOpen(false)
+    setIsMobileNewsOpen(false)
   }, [location.pathname])
 
   useEffect(() => {
@@ -82,6 +88,29 @@ export function MainHeader() {
     }
   }, [isAuthenticated, isAdmin, location.pathname])
 
+  useEffect(() => {
+    let active = true
+    setIsNewsLoading(true)
+
+    void getPublishedBlogPosts()
+      .then((posts) => {
+        if (!active) return
+        setNewsPosts(posts)
+      })
+      .catch(() => {
+        if (!active) return
+        setNewsPosts([])
+      })
+      .finally(() => {
+        if (!active) return
+        setIsNewsLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
   const handleMobileNavigate = (to: string) => {
     navigate(to)
     setIsMobileMenuOpen(false)
@@ -122,6 +151,50 @@ export function MainHeader() {
               </span>
             </NavLink>
           ))}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto gap-1 bg-transparent px-0 text-sm text-zinc-400 transition-colors hover:bg-transparent hover:text-zinc-200 focus-visible:bg-transparent focus-visible:text-zinc-200 data-[state=open]:!bg-transparent data-[state=open]:!text-zinc-400 aria-[expanded=true]:!bg-transparent aria-[expanded=true]:!text-zinc-400"
+                >
+                  Noticias
+                  <ChevronDown className="size-4" />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end" className="w-72 border-white/10 bg-black p-1 text-white ring-white/10">
+              {isNewsLoading ? (
+                <DropdownMenuItem
+                  disabled
+                  className="rounded-sm px-2 py-2 text-zinc-400 focus:bg-transparent focus:text-zinc-400"
+                >
+                  Cargando noticias...
+                </DropdownMenuItem>
+              ) : newsPosts.length > 0 ? (
+                newsPosts.map((post, index) => (
+                  <Fragment key={post.id}>
+                    <DropdownMenuItem
+                      className="cursor-pointer rounded-sm px-2 py-2 leading-snug text-white focus:bg-white/10 focus:text-white"
+                      onClick={() => navigate(`/blog/${post.id}`)}
+                    >
+                      <span className="line-clamp-2">{post.titulo}</span>
+                    </DropdownMenuItem>
+                    {index < newsPosts.length - 1 ? <DropdownMenuSeparator className="bg-white/10" /> : null}
+                  </Fragment>
+                ))
+              ) : (
+                <DropdownMenuItem
+                  disabled
+                  className="rounded-sm px-2 py-2 text-zinc-400 focus:bg-transparent focus:text-zinc-400"
+                >
+                  No hay noticias publicadas
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             type="button"
             variant="outline"
@@ -250,6 +323,36 @@ export function MainHeader() {
                   </span>
                 </button>
               ))}
+              <button
+                type="button"
+                className="rounded-md px-3 py-2 text-left text-sm text-white transition-colors hover:bg-white/10"
+                onClick={() => setIsMobileNewsOpen((prev) => !prev)}
+              >
+                <span className="inline-flex items-center gap-2">
+                  Noticias
+                  <ChevronDown className={`size-4 transition-transform ${isMobileNewsOpen ? "rotate-180" : ""}`} />
+                </span>
+              </button>
+              {isMobileNewsOpen ? (
+                <div className="space-y-1 px-3">
+                  {isNewsLoading ? (
+                    <p className="py-1 text-xs text-zinc-400">Cargando noticias...</p>
+                  ) : newsPosts.length > 0 ? (
+                    newsPosts.map((post) => (
+                      <button
+                        key={post.id}
+                        type="button"
+                        className="block w-full rounded-md px-2 py-2 text-left text-sm text-zinc-300 transition-colors hover:bg-white/10 hover:text-white"
+                        onClick={() => handleMobileNavigate(`/blog/${post.id}`)}
+                      >
+                        {post.titulo}
+                      </button>
+                    ))
+                  ) : (
+                    <p className="py-1 text-xs text-zinc-400">No hay noticias publicadas</p>
+                  )}
+                </div>
+              ) : null}
               <div className="my-1 h-px w-full bg-white/10" />
               {isAuthenticated ? (
                 <>
