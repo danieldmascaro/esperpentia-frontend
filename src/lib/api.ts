@@ -16,8 +16,16 @@ import type {
   Region,
 } from "@/pages/types"
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "https://backend-esperpentia-prod.onrender.com"
+const BACKEND_FALLBACK_URL = "https://backend-esperpentia-prod.onrender.com"
+
+function resolveApiBaseUrl() {
+  const raw = (import.meta.env.VITE_API_BASE_URL ?? "").trim()
+  if (!raw) return BACKEND_FALLBACK_URL
+  if (raw.startsWith("/")) return BACKEND_FALLBACK_URL
+  return raw
+}
+
+const API_BASE_URL = resolveApiBaseUrl()
 
 function buildApiErrorMessage(error: unknown, fallback: string) {
   return buildHumanApiErrorMessage(error, fallback)

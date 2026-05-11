@@ -18,8 +18,17 @@ declare module "axios" {
   }
 }
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "https://backend-esperpentia-prod.onrender.com"
+const BACKEND_FALLBACK_URL = "https://backend-esperpentia-prod.onrender.com"
+
+function resolveApiBaseUrl() {
+  const raw = (import.meta.env.VITE_API_BASE_URL ?? "").trim()
+  if (!raw) return BACKEND_FALLBACK_URL
+  // Evita configuraciones rotas como "/api" o rutas relativas en Vercel.
+  if (raw.startsWith("/")) return BACKEND_FALLBACK_URL
+  return raw
+}
+
+const API_BASE_URL = resolveApiBaseUrl()
 const CSRF_COOKIE_NAME = "csrftoken"
 const CSRF_HEADER_NAME = "X-CSRFToken"
 const CSRF_ENDPOINT = "/auth/csrf/"
