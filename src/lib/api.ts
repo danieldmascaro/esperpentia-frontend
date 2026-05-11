@@ -16,9 +16,8 @@ import type {
   Region,
 } from "@/pages/types"
 
-const API_BASE_URL = import.meta.env.PROD
-  ? "/api"
-  : (import.meta.env.VITE_API_BASE_URL ?? "/api")
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? "https://backend-esperpentia-prod.onrender.com"
 
 function buildApiErrorMessage(error: unknown, fallback: string) {
   return buildHumanApiErrorMessage(error, fallback)
