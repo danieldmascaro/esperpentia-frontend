@@ -18,7 +18,9 @@ declare module "axios" {
   }
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ""
+const API_BASE_URL = import.meta.env.PROD
+  ? "/api"
+  : (import.meta.env.VITE_API_BASE_URL ?? "/api")
 const CSRF_COOKIE_NAME = "csrftoken"
 const CSRF_HEADER_NAME = "X-CSRFToken"
 const CSRF_ENDPOINT = "/auth/csrf/"
