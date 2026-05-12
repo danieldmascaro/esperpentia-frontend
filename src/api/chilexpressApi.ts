@@ -1,4 +1,3 @@
-﻿import axios from "axios"
 import { api } from "@/api/client"
 import { buildHumanApiErrorMessage } from "@/lib/human-errors"
 
@@ -43,31 +42,10 @@ type RatePayload = {
   deliveryTime: number
 }
 
-const RATES_API_KEY =
-  import.meta.env.VITE_CHILEXPRESS_API_COTIZADOR_KEY ??
-  import.meta.env.CHILEXPRESS_API_COTIZADOR_KEY ??
-  import.meta.env.VITE_CHILEXPRESS_API_COBERTURA_KEY ??
-  import.meta.env.CHILEXPRESS_API_COBERTURA_KEY
 const CHILEXPRESS_ORIGIN_COUNTY_CODE = "STGO"
-const CHILEXPRESS_API_BASE_URL = import.meta.env.VITE_CHILEXPRESS_API_BASE_URL ?? "http://testservices.wschilexpress.com"
-
-const chilexpressApi = axios.create({
-  baseURL: CHILEXPRESS_API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-})
 
 function buildApiErrorMessage(error: unknown, fallback: string) {
   return buildHumanApiErrorMessage(error, fallback)
-}
-
-function getRequiredKey(key: string | undefined, keyName: string) {
-  if (!key) {
-    throw new Error(`Falta configurar ${keyName} en el frontend.`)
-  }
-
-  return key
 }
 
 function assertCountyCode(value: string, field: "originCountyCode" | "destinationCountyCode") {
@@ -104,31 +82,27 @@ export async function searchChilexpressStreets(payload: StreetSearchPayload, lim
 }
 
 export async function quoteChilexpressRate(payload: Omit<RatePayload, "originCountyCode">) {
-  const apiKey = getRequiredKey(RATES_API_KEY, "VITE_CHILEXPRESS_API_COTIZADOR_KEY")
   const originCountyCode = CHILEXPRESS_ORIGIN_COUNTY_CODE
   const destinationCountyCode = payload.destinationCountyCode.trim().toUpperCase()
   assertCountyCode(originCountyCode, "originCountyCode")
   assertCountyCode(destinationCountyCode, "destinationCountyCode")
 
   try {
-    const { data } = await chilexpressApi.post<{ data?: { courierServiceOptions?: ChilexpressRateOption[] } }>(
-      "/rating/api/v1.0/rates/courier",
+    const { data } = await api.post<{ options?: ChilexpressRateOption[]; error?: string }>(
+      "/shipping/rates/quote/",
       {
         ...payload,
         originCountyCode,
         destinationCountyCode,
-      },
-      {
-        headers: {
-          "Ocp-Apim-Subscription-Key": apiKey,
-        },
       }
     )
 
-    return data.data?.courierServiceOptions ?? []
+    if (data.error) {
+      throw new Error(data.error)
+    }
+
+    return data.options ?? []
   } catch (error) {
     throw new Error(buildApiErrorMessage(error, "No se pudo cotizar el envío con Chilexpress"))
   }
 }
-
-
