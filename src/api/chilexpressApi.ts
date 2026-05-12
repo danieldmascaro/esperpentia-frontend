@@ -1,4 +1,5 @@
 ﻿import axios from "axios"
+import { api } from "@/api/client"
 import { buildHumanApiErrorMessage } from "@/lib/human-errors"
 
 export type ChilexpressStreet = {
@@ -42,8 +43,6 @@ type RatePayload = {
   deliveryTime: number
 }
 
-const COVERAGE_API_KEY =
-  import.meta.env.VITE_CHILEXPRESS_API_COBERTURA_KEY ?? import.meta.env.CHILEXPRESS_API_COBERTURA_KEY
 const RATES_API_KEY =
   import.meta.env.VITE_CHILEXPRESS_API_COTIZADOR_KEY ??
   import.meta.env.CHILEXPRESS_API_COTIZADOR_KEY ??
@@ -82,24 +81,21 @@ export function getChilexpressOriginCountyCode() {
 }
 
 export async function searchChilexpressStreets(payload: StreetSearchPayload, limit = 6) {
-  const apiKey = getRequiredKey(COVERAGE_API_KEY, "VITE_CHILEXPRESS_API_COBERTURA_KEY")
-
   try {
-    const { data } = await chilexpressApi.post<{ streets?: ChilexpressStreet[] }>(
-      "/georeference/api/v1.0/streets/search",
+    const { data } = await api.post<{ streets?: ChilexpressStreet[]; error?: string }>(
+      "/shipping/streets/search/",
       {
         pointsOfInterestEnabled: false,
         streetNameEnabled: true,
         roadType: 0,
         ...payload,
-      },
-      {
-        params: { limit },
-        headers: {
-          "Ocp-Apim-Subscription-Key": apiKey,
-        },
+        limit,
       }
     )
+
+    if (data.error) {
+      throw new Error(data.error)
+    }
 
     return data.streets ?? []
   } catch (error) {
