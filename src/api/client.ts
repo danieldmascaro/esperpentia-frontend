@@ -18,13 +18,11 @@ declare module "axios" {
   }
 }
 
-const BACKEND_FALLBACK_URL = "https://backend-esperpentia-prod.onrender.com"
+const BACKEND_FALLBACK_URL = "/api"
 
 function resolveApiBaseUrl() {
   const raw = (import.meta.env.VITE_API_BASE_URL ?? "").trim()
   if (!raw) return BACKEND_FALLBACK_URL
-  // Evita configuraciones rotas como "/api" o rutas relativas en Vercel.
-  if (raw.startsWith("/")) return BACKEND_FALLBACK_URL
   return raw
 }
 

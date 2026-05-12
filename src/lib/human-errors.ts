@@ -43,6 +43,31 @@ function mapKnownMessage(message: string) {
   return toCleanSentence(message)
 }
 
+function fromApiDiagnosticPayload(data: Record<string, unknown>) {
+  const detail = typeof data.detail === "string" ? data.detail.trim() : ""
+  const errorId = typeof data.error_id === "string" ? data.error_id.trim() : ""
+  const hint = typeof data.hint === "string" ? data.hint.trim() : ""
+  const debugMessage = typeof data.debug_message === "string" ? data.debug_message.trim() : ""
+
+  if (!detail && !errorId && !hint && !debugMessage) {
+    return null
+  }
+
+  if (hint === "database_unreachable_or_misconfigured") {
+    return `No se pudo conectar a la base de datos${errorId ? ` (ref: ${errorId})` : ""}.`
+  }
+
+  if (hint === "database_schema_or_migration_issue") {
+    return `La base de datos no está sincronizada con el backend${errorId ? ` (ref: ${errorId})` : ""}.`
+  }
+
+  if (detail) {
+    return `${mapKnownMessage(detail)}${errorId ? ` (ref: ${errorId})` : ""}${debugMessage ? ` • ${debugMessage}` : ""}`
+  }
+
+  return `Error interno del servidor${errorId ? ` (ref: ${errorId})` : ""}.`
+}
+
 function fromObjectData(data: Record<string, unknown>) {
   if (typeof data.detail === "string" && data.detail.trim()) {
     return mapKnownMessage(data.detail)
@@ -89,10 +114,19 @@ export function buildHumanApiErrorMessage(error: unknown, fallback: string) {
   }
 
   if (typeof data === "string" && data.trim()) {
+    const normalized = data.trim().toLowerCase()
+    if (normalized.includes("<html") && normalized.includes("server error")) {
+      return "El backend devolvió un error interno (500). Revisa la referencia en logs del servidor."
+    }
     return mapKnownMessage(data)
   }
 
   if (data && typeof data === "object") {
+    const diagnostics = fromApiDiagnosticPayload(data as Record<string, unknown>)
+    if (diagnostics) {
+      return diagnostics
+    }
+
     const parsed = fromObjectData(data as Record<string, unknown>)
     if (parsed) {
       return parsed

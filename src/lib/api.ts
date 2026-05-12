@@ -16,12 +16,11 @@ import type {
   Region,
 } from "@/pages/types"
 
-const BACKEND_FALLBACK_URL = "https://backend-esperpentia-prod.onrender.com"
+const BACKEND_FALLBACK_URL = "/api"
 
 function resolveApiBaseUrl() {
   const raw = (import.meta.env.VITE_API_BASE_URL ?? "").trim()
   if (!raw) return BACKEND_FALLBACK_URL
-  if (raw.startsWith("/")) return BACKEND_FALLBACK_URL
   return raw
 }
 
