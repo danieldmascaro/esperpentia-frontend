@@ -191,11 +191,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
         void restoreSession({ silent: true, hydrateUser: false })
       }
     }
+    const onFocus = () => {
+      void restoreSession({ silent: true, hydrateUser: false })
+    }
+    const onPageShow = () => {
+      void restoreSession({ silent: true, hydrateUser: false })
+    }
 
     document.addEventListener("visibilitychange", onVisible)
+    window.addEventListener("focus", onFocus)
+    window.addEventListener("pageshow", onPageShow)
     return () => {
       window.clearInterval(timer)
       document.removeEventListener("visibilitychange", onVisible)
+      window.removeEventListener("focus", onFocus)
+      window.removeEventListener("pageshow", onPageShow)
     }
   }, [accessToken, restoreSession])
 
