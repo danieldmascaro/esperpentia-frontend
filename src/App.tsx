@@ -1,6 +1,7 @@
 ﻿import { lazy, Suspense } from "react"
 import { Navigate, Route, Routes } from "react-router-dom"
 
+import { CookieConsentBanner } from "./components/CookieConsentBanner"
 import { MainHeader } from "./components/MainHeader"
 import { HomePage } from "./pages/HomePage"
 import { AdminRoute } from "./routes/AdminRoute"
@@ -125,6 +126,7 @@ function App() {
           </Routes>
         </Suspense>
       </main>
+      <CookieConsentBanner />
     </div>
   )
 }
