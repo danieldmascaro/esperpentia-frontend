@@ -29,7 +29,7 @@ export function CookieConsentBanner() {
     <section className="fixed right-4 bottom-4 left-4 z-50 mx-auto max-w-3xl rounded-xl border border-border bg-background/95 p-4 shadow-lg backdrop-blur">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-foreground">
-          Usamos cookies para mantener tu sesión y mejorar tu experiencia al navegar.
+          Usamos cookies esenciales para seguridad y sesion, y otras para mejorar tu experiencia.
         </p>
         <Button variant="black" onClick={acceptCookies}>
           Aceptar cookies
